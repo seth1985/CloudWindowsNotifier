@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System.Text.Json;
 using System.Collections.Generic;
+using Windows.UI.Notifications;
 
 namespace WindowsNotifierTray;
 
@@ -467,8 +468,11 @@ public class TrayForm : Form
     private bool ShowToast(ModuleManifest manifest, string moduleRoot, string? bodyOverride = null)
     {
         var isHero = string.Equals(manifest.type, "hero", StringComparison.OrdinalIgnoreCase);
-        var title = string.IsNullOrWhiteSpace(manifest.title) ? "Cloud Notifier" : manifest.title;
-        var body = bodyOverride ?? manifest.message ?? string.Empty;
+        var title = Clamp(string.IsNullOrWhiteSpace(manifest.title) ? "Cloud Notifier" : manifest.title, 60);
+        var body = Clamp(bodyOverride ?? manifest.message ?? string.Empty, 160);
+        var reminderHours = manifest.behavior?.reminder_hours;
+        var hasReminder = reminderHours.HasValue && reminderHours.Value > 0;
+        var soundEnabledSetting = _settings != null && _settings.TryGetValue("SoundEnabled", out var snd) ? snd != 0 : true;
 
         var builder = new ToastContentBuilder()
             .AddText(title);
@@ -480,9 +484,13 @@ public class TrayForm : Form
         if (isHero && manifest.media?.hero is string hero && !string.IsNullOrWhiteSpace(hero))
         {
             var heroPath = Path.Combine(moduleRoot, hero);
-            if (File.Exists(heroPath))
+            if (TryValidateHero(heroPath))
             {
                 try { builder.AddHeroImage(new Uri(heroPath)); } catch { }
+            }
+            else
+            {
+                Logger.Write("WARN", $"Hero image skipped for '{manifest.id}' due to validation.");
             }
         }
         else if (manifest.media?.icon is string icon && !string.IsNullOrWhiteSpace(icon))
@@ -498,13 +506,17 @@ public class TrayForm : Form
             else
             {
                 var iconPath = Path.Combine(moduleRoot, icon);
-                if (File.Exists(iconPath))
+                if (TryValidateIcon(iconPath))
                 {
                     try
                     {
                         builder.AddAppLogoOverride(new Uri(iconPath), ToastGenericAppLogoCrop.Default);
                     }
                     catch { }
+                }
+                else
+                {
+                    Logger.Write("WARN", $"Icon skipped for '{manifest.id}' due to validation.");
                 }
             }
         }
@@ -514,10 +526,15 @@ public class TrayForm : Form
         }
 
         // OK button
+        var tag = SafeTag(manifest.id);
+        const string group = "module";
+
         builder.AddButton(new ToastButton()
             .SetContent("OK, I understand")
             .AddArgument("action", "complete")
-            .AddArgument("module", manifest.id));
+            .AddArgument("module", manifest.id)
+            .AddArgument("tag", tag)
+            .AddArgument("group", group));
 
         // More info – opens a URL and should also complete the module
         if (manifest.media?.link is string link && !string.IsNullOrWhiteSpace(link))
@@ -536,13 +553,34 @@ public class TrayForm : Form
                     .SetContent("More info")
                     .AddArgument("action", "link")
                     .AddArgument("module", manifest.id)
-                    .AddArgument("url", linkUri.AbsoluteUri));
+                    .AddArgument("url", linkUri.AbsoluteUri)
+                    .AddArgument("tag", tag)
+                    .AddArgument("group", group));
             }
         }
 
         try
         {
-            builder.Show();
+            var content = builder.GetToastContent();
+            content.Scenario = hasReminder ? ToastScenario.Reminder : ToastScenario.Default;
+            content.Audio = new ToastAudio { Silent = !soundEnabledSetting };
+
+            var xml = content.GetXml();
+            var toast = new ToastNotification(xml)
+            {
+                Tag = tag,
+                Group = group
+            };
+
+            var expiresUtc = ParseDate(manifest.expires_utc);
+            if (expiresUtc.HasValue) toast.ExpirationTime = expiresUtc.Value.ToLocalTime();
+
+            ToastNotificationManagerCompat.CreateToastNotifier().Show(toast);
+            _ = _telemetry.SendAsync(manifest.id, "ToastShown", new Dictionary<string, object>
+            {
+                ["tag"] = toast.Tag ?? string.Empty,
+                ["group"] = toast.Group ?? string.Empty
+            });
             return true;
         }
         catch
@@ -575,7 +613,10 @@ public class TrayForm : Form
 
                 _ = _telemetry.SendAsync(parsed.ModuleId, "ButtonMoreInfo", new Dictionary<string, object>
                 {
-                    ["url"] = parsed.Url ?? string.Empty
+                    ["url"] = parsed.Url ?? string.Empty,
+                    ["tag"] = parsed.Tag ?? string.Empty,
+                    ["group"] = parsed.Group ?? string.Empty,
+                    ["args"] = parsed.Raw
                 });
                 CompleteModule(parsed.ModuleId);
                 return;
@@ -583,7 +624,12 @@ public class TrayForm : Form
 
             if (string.Equals(parsed.Action, "complete", StringComparison.OrdinalIgnoreCase))
             {
-                _ = _telemetry.SendAsync(parsed.ModuleId, "ButtonOk");
+                _ = _telemetry.SendAsync(parsed.ModuleId, "ButtonOk", new Dictionary<string, object>
+                {
+                    ["tag"] = parsed.Tag ?? string.Empty,
+                    ["group"] = parsed.Group ?? string.Empty,
+                    ["args"] = parsed.Raw
+                });
                 CompleteModule(parsed.ModuleId);
             }
         }
@@ -611,6 +657,61 @@ public class TrayForm : Form
     {
         if (int.TryParse(value, out var i)) return i;
         return null;
+    }
+
+    private static string Clamp(string value, int maxLength)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+        return value.Length <= maxLength ? value : value.Substring(0, maxLength);
+    }
+
+    private static string SafeTag(string moduleId)
+    {
+        if (string.IsNullOrWhiteSpace(moduleId)) return Guid.NewGuid().ToString("N").Substring(0, 16);
+        return moduleId.Length <= 64 ? moduleId : moduleId.Substring(0, 64);
+    }
+
+    private static bool TryValidateHero(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
+        if (!path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return false;
+
+        try
+        {
+            var info = new FileInfo(path);
+            if (info.Length > 1_024_000) return false; // 1 MB limit
+
+            using var img = System.Drawing.Image.FromFile(path);
+            var ratio = (double)img.Width / img.Height;
+            if (ratio < 1.94 || ratio > 2.06) return false; // ~2:1 ±3%
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryValidateIcon(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
+
+        var extOk = path.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase);
+        if (!extOk) return false;
+
+        try
+        {
+            var info = new FileInfo(path);
+            if (info.Length > 512_000) return false; // 512 KB guardrail
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private string EnsureDefaultLogo()
