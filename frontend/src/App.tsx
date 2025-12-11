@@ -16,6 +16,19 @@ type ModuleRow = {
    heroOriginalName?: string | null;
 };
 
+type TemplateType = 'Conditional' | 'Dynamic' | 'Both';
+
+type PowerShellTemplate = {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+  scriptBody: string;
+  type: TemplateType;
+  createdUtc?: string;
+  createdBy?: string | null;
+};
+
 export default function App() {
   const [apiBase, setApiBase] = useState('http://localhost:5210');
   const [username, setUsername] = useState('admin');
@@ -59,6 +72,16 @@ export default function App() {
   const [pendingIconFile, setPendingIconFile] = useState<File | null>(null);
   const [pendingIconPreview, setPendingIconPreview] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(() => localStorage.getItem('wnc_theme') === 'dark');
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [templateMode, setTemplateMode] = useState<'conditional' | 'dynamic'>('conditional');
+  const [templates, setTemplates] = useState<PowerShellTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [tplTitle, setTplTitle] = useState('');
+  const [tplDescription, setTplDescription] = useState('');
+  const [tplCategory, setTplCategory] = useState('General');
+  const [tplType, setTplType] = useState<TemplateType>('Conditional');
+  const [tplScript, setTplScript] = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('wnc_api_base');
@@ -178,6 +201,105 @@ const filteredModules = useMemo(() => {
       return;
     }
     exportDevCore(apiBase, token, selectedModuleId, setStatus, setLoading);
+  };
+
+  const loadTemplates = async (mode: 'conditional' | 'dynamic') => {
+    if (!token) {
+      setStatus('Login first to load templates.');
+      return;
+    }
+    try {
+      setTemplatesLoading(true);
+      const res = await fetch(`${apiBase}/api/templates?type=${mode}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        setStatus(`Templates load failed (${res.status}): ${txt}`);
+        return;
+      }
+      const data = await res.json();
+      setTemplates(data);
+      setStatus('Templates loaded.');
+    } catch (err) {
+      setStatus(`Templates error: ${err}`);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  const openTemplateGallery = () => {
+    if (newType !== 'Conditional' && newType !== 'Dynamic') return;
+    const mode = newType === 'Dynamic' ? 'dynamic' : 'conditional';
+    setTemplateMode(mode);
+    loadTemplates(mode);
+    setTemplateModalOpen(true);
+    setTplType(newType === 'Dynamic' ? 'Dynamic' : 'Conditional');
+  };
+
+  const handleInsertTemplate = (tpl: PowerShellTemplate) => {
+    if (newType === 'Dynamic') {
+      setNewDynamicScript(tpl.scriptBody);
+    } else {
+      setNewConditionalScript(tpl.scriptBody);
+    }
+    setStatus(`Inserted template '${tpl.title}'.`);
+    setTemplateModalOpen(false);
+  };
+
+  const handleCopyTemplate = async (tpl: PowerShellTemplate) => {
+    try {
+      await navigator.clipboard.writeText(tpl.scriptBody);
+      setStatus('Copied script to clipboard.');
+    } catch {
+      setStatus('Copy failed.');
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!token) {
+      setStatus('Login first.');
+      return;
+    }
+    if (!tplTitle.trim() || !tplScript.trim()) {
+      setStatus('Title and script are required.');
+      return;
+    }
+    try {
+      setTemplatesLoading(true);
+      const res = await fetch(`${apiBase}/api/templates`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: tplTitle.trim(),
+          description: tplDescription?.trim() || null,
+          category: tplCategory.trim() || 'General',
+          type: tplType,
+          scriptBody: tplScript
+        })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        setStatus(`Template save failed (${res.status}): ${txt}`);
+        return;
+      }
+      const data = await res.json();
+      setTemplates((prev) => [data, ...prev]);
+      setStatus('Template saved.');
+      setShowCreateTemplate(false);
+      setTplTitle('');
+      setTplDescription('');
+      setTplCategory('General');
+      setTplScript('');
+      setTplType(newType === 'Dynamic' ? 'Dynamic' : 'Conditional');
+    } catch (err) {
+      setStatus(`Template save error: ${err}`);
+    } finally {
+      setTemplatesLoading(false);
+    }
   };
   const handleIconFileSelected = (file: File) => {
     // If editing an existing module (selected row), upload immediately.
@@ -489,6 +611,7 @@ const filteredModules = useMemo(() => {
           setDynamicFallbackMessage={setDynamicFallbackMessage}
           conditionalInterval={conditionalInterval}
           setConditionalInterval={setConditionalInterval}
+          onOpenTemplates={openTemplateGallery}
         />
 
         <div className="filters-row">
@@ -702,6 +825,39 @@ const filteredModules = useMemo(() => {
               handleIconFileSelected(file)
             }
           />
+          <TemplateGalleryModal
+            isOpen={templateModalOpen}
+            mode={templateMode}
+            templates={templates}
+            loading={templatesLoading}
+            onClose={() => {
+              setTemplateModalOpen(false);
+              setShowCreateTemplate(false);
+            }}
+            onRefresh={() => loadTemplates(templateMode)}
+            onInsert={handleInsertTemplate}
+            onCopy={handleCopyTemplate}
+            onCreateNew={() => {
+              setShowCreateTemplate(true);
+              setTplType(newType === 'Dynamic' ? 'Dynamic' : 'Conditional');
+            }}
+          />
+          <TemplateCreateModal
+            isOpen={showCreateTemplate}
+            onClose={() => setShowCreateTemplate(false)}
+            title={tplTitle}
+            setTitle={setTplTitle}
+            description={tplDescription}
+            setDescription={setTplDescription}
+            category={tplCategory}
+            setCategory={setTplCategory}
+            type={tplType}
+            setType={setTplType}
+            script={tplScript}
+            setScript={setTplScript}
+            onSave={handleSaveTemplate}
+            loading={templatesLoading}
+          />
         </>
       )}
     </div>
@@ -787,6 +943,7 @@ function ModuleForm(props: {
   setDynamicFallbackMessage: (s: string) => void;
   conditionalInterval: string;
   setConditionalInterval: (s: string) => void;
+  onOpenTemplates: () => void;
 }) {
   return (
     <div className="editor">
@@ -966,7 +1123,12 @@ function ModuleForm(props: {
         <div className="form-card">
           <div className="section-head">
             <h4>Behavior</h4>
-            <p className="hint">Runs a conditional PowerShell script; toast shows only if script Exit 0.</p>
+            <div className="button-row">
+              <p className="hint">Runs a conditional PowerShell script; toast shows only if script Exit 0.</p>
+              <button type="button" onClick={props.onOpenTemplates}>
+                PowerShell Templates
+              </button>
+            </div>
           </div>
           <div className="stack two">
             <label>
@@ -996,7 +1158,12 @@ function ModuleForm(props: {
         <div className="form-card">
           <div className="section-head">
             <h4>Behavior</h4>
-            <p className="hint">Runs a dynamic PowerShell script that returns title/message/link/icon.</p>
+            <div className="button-row">
+              <p className="hint">Runs a dynamic PowerShell script that returns title/message/link/icon.</p>
+              <button type="button" onClick={props.onOpenTemplates}>
+                PowerShell Templates
+              </button>
+            </div>
           </div>
           <label>
             Dynamic script (PowerShell)
@@ -1046,6 +1213,147 @@ function ModuleForm(props: {
         </div>
       )}
 
+    </div>
+  );
+}
+
+function TemplateGalleryModal(props: {
+  isOpen: boolean;
+  mode: 'conditional' | 'dynamic';
+  templates: PowerShellTemplate[];
+  loading: boolean;
+  onClose: () => void;
+  onRefresh: () => void;
+  onInsert: (tpl: PowerShellTemplate) => void;
+  onCopy: (tpl: PowerShellTemplate) => void;
+  onCreateNew: () => void;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  if (!props.isOpen) return null;
+
+  const grouped = props.templates.reduce<Record<string, PowerShellTemplate[]>>((acc, tpl) => {
+    const key = tpl.category || 'Uncategorized';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(tpl);
+    return acc;
+  }, {});
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal template-modal">
+        <div className="modal-head">
+          <h3>PowerShell Templates ({props.mode === 'conditional' ? 'Conditional' : 'Dynamic'})</h3>
+          <div className="modal-actions">
+            <button onClick={props.onRefresh} disabled={props.loading}>Refresh</button>
+            <button onClick={props.onCreateNew}>Create New</button>
+            <button onClick={props.onClose}>Close</button>
+          </div>
+        </div>
+        {props.loading && <div className="hint">Loading templates...</div>}
+        <div className="template-list">
+          {Object.keys(grouped).length === 0 && !props.loading && <div className="hint">No templates found.</div>}
+          {Object.entries(grouped).map(([category, items]) => (
+            <div key={category} className="template-group">
+              <h4>{category}</h4>
+              <div className="template-cards">
+                {items.map((tpl) => {
+                  const expanded = expandedId === tpl.id;
+                  return (
+                    <div key={tpl.id} className="template-card">
+                      <div className="template-card-head">
+                        <div>
+                          <div className="template-title">{tpl.title}</div>
+                          <div className="template-desc">{tpl.description}</div>
+                        </div>
+                        <div className="template-tags">
+                          <span className="chip">{tpl.type}</span>
+                        </div>
+                      </div>
+                      <div className="template-actions">
+                        <button onClick={() => props.onInsert(tpl)}>Insert</button>
+                        <button onClick={() => props.onCopy(tpl)}>Copy</button>
+                        <button onClick={() => setExpandedId(expanded ? null : tpl.id)}>
+                          {expanded ? 'Hide script' : 'Show script'}
+                        </button>
+                      </div>
+                      {expanded && (
+                        <pre className="template-script">{tpl.scriptBody}</pre>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TemplateCreateModal(props: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  setTitle: (s: string) => void;
+  description: string;
+  setDescription: (s: string) => void;
+  category: string;
+  setCategory: (s: string) => void;
+  type: TemplateType;
+  setType: (t: TemplateType) => void;
+  script: string;
+  setScript: (s: string) => void;
+  onSave: () => void;
+  loading: boolean;
+}) {
+  if (!props.isOpen) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal template-modal">
+        <div className="modal-head">
+          <h3>Create template</h3>
+          <div className="modal-actions">
+            <button onClick={props.onClose}>Close</button>
+          </div>
+        </div>
+        <label>
+          Title
+          <input value={props.title} onChange={(e) => props.setTitle(e.target.value)} />
+        </label>
+        <label>
+          Description
+          <input value={props.description} onChange={(e) => props.setDescription(e.target.value)} />
+        </label>
+        <label>
+          Category
+          <input value={props.category} onChange={(e) => props.setCategory(e.target.value)} />
+        </label>
+        <label>
+          Type
+          <select value={props.type} onChange={(e) => props.setType(e.target.value as TemplateType)}>
+            <option value="Conditional">Conditional</option>
+            <option value="Dynamic">Dynamic</option>
+            <option value="Both">Both</option>
+          </select>
+        </label>
+        <label>
+          Script
+          <textarea
+            className="script-area"
+            placeholder="Enter PowerShell script..."
+            value={props.script}
+            onChange={(e) => props.setScript(e.target.value)}
+          />
+        </label>
+        <div className="modal-actions">
+          <button className="btn primary" onClick={props.onSave} disabled={props.loading}>
+            Save template
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

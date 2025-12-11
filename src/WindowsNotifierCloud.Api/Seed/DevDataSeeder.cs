@@ -44,5 +44,50 @@ public sealed class DevDataSeeder
         await _db.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("DevDataSeeder: Seeded default Advanced user 'admin'.");
+
+        // Seed a few sample PowerShell templates for the gallery
+        if (!await _db.PowerShellTemplates.AnyAsync(cancellationToken))
+        {
+            var seedTemplates = new[]
+            {
+                new PowerShellTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Pending reboots",
+                    Description = "Detects common reboot flags in registry and WMI.",
+                    Category = "Maintenance",
+                    ScriptBody = "if ((Get-ItemProperty -Path 'HKLM:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\WindowsUpdate\\\\Auto Update').RebootRequired -or (Get-CimInstance Win32_ComputerSystem).RebootPending) { exit 0 } else { exit 1 }",
+                    Type = TemplateType.Conditional,
+                    CreatedByUserId = adminUser.Id,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                new PowerShellTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "List installed updates (recent 5)",
+                    Description = "Shows last 5 installed hotfixes.",
+                    Category = "Compliance",
+                    ScriptBody = "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 5 | ForEach-Object {\"$($_.HotFixID) $($_.InstalledOn)\"}",
+                    Type = TemplateType.Dynamic,
+                    CreatedByUserId = adminUser.Id,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                new PowerShellTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Disk free space (system drive)",
+                    Description = "Reports free space on the system drive.",
+                    Category = "Diagnostics",
+                    ScriptBody = "$sys = Get-PSDrive -Name C; [PSCustomObject]@{ title = 'Disk space'; message = \"Free: $([math]::Round($sys.Free/1GB,2)) GB\" }",
+                    Type = TemplateType.Dynamic,
+                    CreatedByUserId = adminUser.Id,
+                    CreatedUtc = DateTime.UtcNow
+                }
+            };
+
+            _db.PowerShellTemplates.AddRange(seedTemplates);
+            await _db.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("DevDataSeeder: Seeded sample PowerShell templates.");
+        }
     }
 }

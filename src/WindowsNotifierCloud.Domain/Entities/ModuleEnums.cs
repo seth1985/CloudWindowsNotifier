@@ -22,3 +22,11 @@ public enum ModuleCategory
     Application,
     Other
 }
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum TemplateType
+{
+    Conditional,
+    Dynamic,
+    Both
+}

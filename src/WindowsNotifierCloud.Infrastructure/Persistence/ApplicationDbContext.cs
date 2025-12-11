@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<ModuleDefinition> ModuleDefinitions => Set<ModuleDefinition>();
     public DbSet<TelemetryEvent> TelemetryEvents => Set<TelemetryEvent>();
+    public DbSet<PowerShellTemplate> PowerShellTemplates => Set<PowerShellTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +101,23 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(t => t.ModuleId);
             entity.HasIndex(t => t.EventType);
             entity.HasIndex(t => t.OccurredAtUtc);
+        });
+
+        modelBuilder.Entity<PowerShellTemplate>(entity =>
+        {
+            entity.ToTable("PowerShellTemplates");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Title).IsRequired().HasMaxLength(200);
+            entity.Property(t => t.Description).HasMaxLength(1000);
+            entity.Property(t => t.Category).IsRequired().HasMaxLength(100);
+            entity.Property(t => t.ScriptBody).IsRequired().HasColumnType("TEXT");
+            entity.Property(t => t.Type).HasConversion<int>();
+            entity.Property(t => t.CreatedUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(t => t.CreatedBy)
+                  .WithMany()
+                  .HasForeignKey(t => t.CreatedByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

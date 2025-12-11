@@ -378,6 +378,73 @@ button:disabled {
   color: #ffffff;
 }
 
+.template-modal {
+  width: min(940px, 95vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.template-group h4 {
+  margin: 8px 0;
+}
+
+.template-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.template-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.template-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.template-title {
+  font-weight: 600;
+}
+
+.template-desc {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.template-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.template-script {
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 10px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
 .module-telemetry-table table {
   width: 100%;
   border-collapse: collapse;
