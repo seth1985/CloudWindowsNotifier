@@ -53,8 +53,7 @@ public class ModulesController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(request.Title))
                 return BadRequest("Hero notifications require a title.");
-            // Hero modules do not support message or icon uploads.
-            request.Message = null;
+            // Hero modules support optional message; icons are not used.
             request.IconFileName = null;
             request.IconOriginalName = null;
         }
@@ -75,7 +74,6 @@ public class ModulesController : ControllerBase
             Type = request.Type,
             Category = request.Category,
             Description = request.Description?.Trim(),
-            CampaignId = request.CampaignId,
             Title = request.Title,
             Message = request.Message,
             LinkUrl = request.LinkUrl,
@@ -130,7 +128,6 @@ public class ModulesController : ControllerBase
         entity.DisplayName = request.DisplayName?.Trim() ?? entity.DisplayName;
         entity.Description = request.Description?.Trim();
         entity.Category = request.Category;
-        entity.CampaignId = request.CampaignId;
         entity.Title = request.Title;
         entity.Message = request.Message;
         entity.LinkUrl = request.LinkUrl;

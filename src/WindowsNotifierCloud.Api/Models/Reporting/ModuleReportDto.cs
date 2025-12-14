@@ -5,7 +5,6 @@ public record ModuleReportDto(
     string? DisplayName,
     string? Type,
     string? Category,
-    string? Campaign,
     int ToastShown,
     int ButtonOk,
     int ButtonMoreInfo,

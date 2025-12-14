@@ -9,7 +9,6 @@ public class ModuleUpsertRequest
     public ModuleType Type { get; set; }
     public ModuleCategory Category { get; set; }
     public string? Description { get; set; }
-    public Guid? CampaignId { get; set; }
 
     // Content
     public string? Title { get; set; }

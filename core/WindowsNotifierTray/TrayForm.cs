@@ -218,7 +218,7 @@ public class TrayForm : Form
                 continue;
             }
 
-        // Core settings modules: apply and clear
+            // Core settings modules: apply and clear
         if (string.Equals(manifest.type, "core_update", StringComparison.OrdinalIgnoreCase) && manifest.core_settings != null)
         {
             var settingsToApply = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -234,6 +234,16 @@ public class TrayForm : Form
             {
                 CoreSettingsStore.SetSettings(settingsToApply);
                 Logger.Write("INFO", $"Applied core settings from module '{manifest.id}'.");
+                _ = _telemetry.SendAsync(manifest.id, "CoreSettingsApplied", new Dictionary<string, object>
+                {
+                    ["enabled"] = manifest.core_settings.enabled ?? 0,
+                    ["polling"] = manifest.core_settings.polling_interval_seconds ?? 0,
+                    ["heartbeat"] = manifest.core_settings.heartbeat_seconds ?? 0,
+                    ["autoClear"] = manifest.core_settings.auto_clear_modules ?? 0,
+                    ["sound"] = manifest.core_settings.sound_enabled ?? 0,
+                    ["exitMenu"] = manifest.core_settings.exit_menu_visible ?? 0,
+                    ["startStopMenu"] = manifest.core_settings.start_stop_menu_visible ?? 0
+                });
             }
 
             ModuleCompletion.Finish(manifest.id, dir, state, now, autoClearSetting == 1);

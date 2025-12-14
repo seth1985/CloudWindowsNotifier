@@ -77,9 +77,7 @@ public class ReportingController : ControllerBase
         var telemetry = _db.TelemetryEvents
             .Where(e => e.OccurredAtUtc >= start && e.OccurredAtUtc <= end);
 
-        var modules = await _db.ModuleDefinitions
-            .Include(m => m.Campaign)
-            .ToListAsync(ct);
+        var modules = await _db.ModuleDefinitions.ToListAsync(ct);
 
         var grouped = await telemetry
             .GroupBy(e => e.ModuleId)
@@ -107,7 +105,6 @@ public class ReportingController : ControllerBase
                 module?.DisplayName,
                 module?.Type.ToString(),
                 module?.Category.ToString(),
-                module?.Campaign?.Name,
                 g.ToastShown,
                 g.ButtonOk,
                 g.ButtonMoreInfo,
@@ -129,7 +126,7 @@ public class ReportingController : ControllerBase
     {
         var (start, end) = NormalizeRange(from, to);
 
-        var module = await _db.ModuleDefinitions.Include(m => m.Campaign).FirstOrDefaultAsync(m => m.ModuleId == moduleId, ct);
+        var module = await _db.ModuleDefinitions.FirstOrDefaultAsync(m => m.ModuleId == moduleId, ct);
         if (module == null) return NotFound();
 
         var g = await _db.TelemetryEvents
@@ -169,7 +166,6 @@ public class ReportingController : ControllerBase
             module.DisplayName,
             module.Type.ToString(),
             module.Category.ToString(),
-            module.Campaign?.Name,
             g.ToastShown,
             g.ButtonOk,
             g.ButtonMoreInfo,
