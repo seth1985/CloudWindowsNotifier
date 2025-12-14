@@ -92,6 +92,9 @@ export default function App() {
     setType: setTplType,
     script: tplScript,
     setScript: setTplScript,
+    editingId: tplEditingId,
+    beginEdit: beginTplEdit,
+    removeTemplate: removeTpl,
     loadTemplates,
     saveTemplate
   } = useTemplates(apiBase, token, setStatus);
@@ -230,6 +233,15 @@ export default function App() {
             onInsert={(tpl) => handleInsertTemplate(tpl.scriptBody)}
             onCopy={handleCopyTemplate}
             onCreateNew={() => setShowCreate(true)}
+            onEdit={(tpl) => {
+              beginTplEdit(tpl);
+              setShowGallery(false);
+            }}
+            onRemove={(tpl) => {
+              if (confirm(`Remove template \"${tpl.title}\"?`)) {
+                removeTpl(tpl);
+              }
+            }}
           />
 
           <TemplateCreateModal
@@ -247,6 +259,7 @@ export default function App() {
             setScript={setTplScript}
             onSave={saveTemplate}
             loading={templatesLoading}
+            isEditing={!!tplEditingId}
           />
         </>
       )}

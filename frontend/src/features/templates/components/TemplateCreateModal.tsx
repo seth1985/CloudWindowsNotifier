@@ -4,6 +4,7 @@ import type { TemplateType } from '../../types';
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  isEditing?: boolean;
   title: string;
   setTitle: (s: string) => void;
   description: string;
@@ -25,7 +26,7 @@ export const TemplateCreateModal: React.FC<Props> = (props) => {
     <div className="modal-backdrop">
       <div className="modal template-modal">
         <div className="modal-head">
-          <h3>Create template</h3>
+          <h3>{props.isEditing ? 'Edit template' : 'Create template'}</h3>
           <div className="modal-actions">
             <button onClick={props.onClose}>Close</button>
           </div>
@@ -61,7 +62,7 @@ export const TemplateCreateModal: React.FC<Props> = (props) => {
         </label>
         <div className="modal-actions">
           <button className="btn primary" onClick={props.onSave} disabled={props.loading}>
-            Save template
+            {props.isEditing ? 'Update template' : 'Save template'}
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PowerShellTemplate, TemplateType } from '../../types';
-import { getTemplates, createTemplate } from './api';
+import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from './api';
 
 export function useTemplates(apiBase: string, token: string | null, setGlobalStatus: (s: string) => void) {
   const [mode, setMode] = useState<'conditional' | 'dynamic'>('conditional');
@@ -13,6 +13,7 @@ export function useTemplates(apiBase: string, token: string | null, setGlobalSta
   const [category, setCategory] = useState('General');
   const [type, setType] = useState<TemplateType>('Conditional');
   const [script, setScript] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadTemplates = async (nextMode: 'conditional' | 'dynamic') => {
     if (!token) {
@@ -41,24 +42,61 @@ export function useTemplates(apiBase: string, token: string | null, setGlobalSta
       setGlobalStatus('Title and script are required.');
       return;
     }
+    const payload = {
+      title: title.trim(),
+      description: description.trim() || null,
+      category: category.trim() || 'General',
+      type,
+      scriptBody: script
+    };
+    const isEdit = !!editingId;
     try {
       setLoading(true);
-      const tpl = await createTemplate(apiBase, token, {
-        title: title.trim(),
-        description: description.trim() || null,
-        category: category.trim() || 'General',
-        type,
-        scriptBody: script
-      });
-      setTemplates((prev) => [tpl, ...prev]);
-      setGlobalStatus('Template saved.');
+      let tpl: PowerShellTemplate;
+      if (isEdit) {
+        tpl = await updateTemplate(apiBase, token, editingId!, payload);
+        setTemplates((prev) => prev.map((t) => (t.id === tpl.id ? tpl : t)));
+        setGlobalStatus('Template updated.');
+      } else {
+        tpl = await createTemplate(apiBase, token, payload);
+        setTemplates((prev) => [tpl, ...prev]);
+        setGlobalStatus('Template saved.');
+      }
       setShowCreate(false);
       setTitle('');
       setDescription('');
       setCategory('General');
       setScript('');
+      setEditingId(null);
     } catch (err: any) {
       setGlobalStatus(err?.message ?? 'Error saving template.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const beginEdit = (tpl: PowerShellTemplate) => {
+    setEditingId(tpl.id);
+    setTitle(tpl.title);
+    setDescription(tpl.description ?? '');
+    setCategory(tpl.category ?? 'General');
+    setType(tpl.type);
+    setScript(tpl.scriptBody ?? '');
+    setShowCreate(true);
+  };
+
+  const removeTemplate = async (tpl: PowerShellTemplate) => {
+    if (!token) {
+      setGlobalStatus('Login first.');
+      return;
+    }
+    try {
+      setLoading(true);
+      await deleteTemplate(apiBase, token, tpl.id);
+      setTemplates((prev) => prev.filter((t) => t.id !== tpl.id));
+      setGlobalStatus('Template removed.');
+    } catch (err: any) {
+      setGlobalStatus(err?.message ?? 'Error removing template.');
     } finally {
       setLoading(false);
     }
@@ -85,6 +123,10 @@ export function useTemplates(apiBase: string, token: string | null, setGlobalSta
     script,
     setScript,
     loadTemplates,
-    saveTemplate
+    saveTemplate,
+    beginEdit,
+    removeTemplate,
+    editingId,
+    setEditingId
   };
 }

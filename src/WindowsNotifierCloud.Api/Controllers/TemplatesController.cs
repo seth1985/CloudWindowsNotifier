@@ -82,6 +82,43 @@ public class TemplatesController : ControllerBase
         return CreatedAtAction(nameof(List), new { id = entity.Id }, dto);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<TemplateDto>> Update(Guid id, [FromBody] TemplateCreateRequest request, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var entity = await _db.PowerShellTemplates.FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (entity == null) return NotFound();
+
+        entity.Title = request.Title.Trim();
+        entity.Description = request.Description?.Trim();
+        entity.Category = request.Category.Trim();
+        entity.ScriptBody = request.ScriptBody;
+        entity.Type = request.Type;
+
+        await _db.SaveChangesAsync(ct);
+
+        var dto = await _db.PowerShellTemplates
+            .Include(t => t.CreatedBy)
+            .Where(t => t.Id == entity.Id)
+            .Select(t => t.ToDto())
+            .FirstAsync(ct);
+
+        return Ok(dto);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var entity = await _db.PowerShellTemplates.FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (entity == null) return NotFound();
+
+        _db.PowerShellTemplates.Remove(entity);
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     private Guid ResolveUserId()
     {
         var sub = User?.FindFirst("sub")?.Value;

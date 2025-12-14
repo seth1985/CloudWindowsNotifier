@@ -19,3 +19,22 @@ export async function createTemplate(
 ): Promise<PowerShellTemplate> {
   return apiPostJson<typeof payload, PowerShellTemplate>(`${apiBase}/api/templates`, token, payload);
 }
+
+export async function updateTemplate(
+  apiBase: string,
+  token: string,
+  id: string,
+  payload: {
+    title: string;
+    description: string | null;
+    category: string;
+    type: TemplateType;
+    scriptBody: string;
+  }
+): Promise<PowerShellTemplate> {
+  return apiPostJson<typeof payload, PowerShellTemplate>(`${apiBase}/api/templates/${id}`, token, payload as any, 'PUT');
+}
+
+export async function deleteTemplate(apiBase: string, token: string, id: string): Promise<void> {
+  return apiPostJson<null, void>(`${apiBase}/api/templates/${id}`, token, null as any, 'DELETE');
+}

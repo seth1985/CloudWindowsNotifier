@@ -11,6 +11,8 @@ type Props = {
   onInsert: (tpl: PowerShellTemplate) => void;
   onCopy: (tpl: PowerShellTemplate) => void;
   onCreateNew: () => void;
+  onEdit: (tpl: PowerShellTemplate) => void;
+  onRemove: (tpl: PowerShellTemplate) => void;
 };
 
 export const TemplateGalleryModal: React.FC<Props> = (props) => {
@@ -66,6 +68,8 @@ export const TemplateGalleryModal: React.FC<Props> = (props) => {
                             props.onCopy(tpl);
                           }
                         }}>Copy</button>
+                        <button onClick={() => props.onEdit(tpl)}>Modify</button>
+                        <button onClick={() => props.onRemove(tpl)}>Remove</button>
                         <button onClick={() => setExpandedId(expanded ? null : tpl.id)}>
                           {expanded ? 'Hide script' : 'Show script'}
                         </button>
