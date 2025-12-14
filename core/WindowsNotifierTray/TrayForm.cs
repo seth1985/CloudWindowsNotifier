@@ -834,6 +834,27 @@ public class TrayForm : Form
 
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(key))
         {
+            // Registry fallback (Core settings can set these via deployment)
+            try
+            {
+                using var reg = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\CloudNotifier\Core");
+                if (reg != null)
+                {
+                    if (string.IsNullOrWhiteSpace(url))
+                    {
+                        url = reg.GetValue("TelemetryUrl") as string ?? url;
+                    }
+                    if (string.IsNullOrWhiteSpace(key))
+                    {
+                        key = reg.GetValue("TelemetryKey") as string ?? key;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(key))
+        {
             try
             {
                 var cfgPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CloudNotifier", "tray.config.json");
@@ -865,6 +886,12 @@ public class TrayForm : Form
         if (string.IsNullOrWhiteSpace(key))
         {
             key = "dev-telemetry-key-change-me";
+        }
+
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(key))
+        {
+            Logger.Write("WARN", "Telemetry URL/key not configured; telemetry will be skipped.");
+            return new TelemetryClient(string.Empty, string.Empty);
         }
 
         return new TelemetryClient(url, key);
