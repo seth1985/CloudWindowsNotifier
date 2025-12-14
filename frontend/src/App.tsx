@@ -93,6 +93,7 @@ export default function App() {
     script: tplScript,
     setScript: setTplScript,
     editingId: tplEditingId,
+    setEditingId: setTplEditingId,
     beginEdit: beginTplEdit,
     removeTemplate: removeTpl,
     loadTemplates,
@@ -122,6 +123,16 @@ export default function App() {
       formType === 'Dynamic' ? 'dynamic' : 'conditional';
     loadTemplates(mode);
     setShowGallery(true);
+  };
+
+  const handleCloseTemplateModal = () => {
+    setShowCreate(false);
+    setTplTitle('');
+    setTplDescription('');
+    setTplCategory('General');
+    setTplType('Conditional');
+    setTplScript('');
+    setTplEditingId(null);
   };
 
   const handleInsertTemplate = (body: string) => {
@@ -246,7 +257,7 @@ export default function App() {
 
           <TemplateCreateModal
             isOpen={showCreate}
-            onClose={() => setShowCreate(false)}
+            onClose={handleCloseTemplateModal}
             title={tplTitle}
             setTitle={setTplTitle}
             description={tplDescription}

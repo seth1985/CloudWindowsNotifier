@@ -9,9 +9,14 @@ export async function apiGet<T>(url: string, token: string): Promise<T> {
   return res.json();
 }
 
-export async function apiPostJson<TReq, TRes>(url: string, token: string | null, body: TReq): Promise<TRes> {
+export async function apiPostJson<TReq, TRes>(
+  url: string,
+  token: string | null,
+  body: TReq,
+  method: 'POST' | 'PUT' | 'DELETE' = 'POST'
+): Promise<TRes> {
   const res = await fetch(url, {
-    method: 'POST',
+    method,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -20,8 +25,9 @@ export async function apiPostJson<TReq, TRes>(url: string, token: string | null,
   });
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`POST ${url} failed (${res.status}): ${txt}`);
+    throw new Error(`${method} ${url} failed (${res.status}): ${txt}`);
   }
+  if (res.status === 204) return undefined as any;
   return res.json();
 }
 
