@@ -27,6 +27,8 @@ public class TrayForm : Form
     private readonly ToolStripMenuItem _exitItem;
     private System.Collections.Generic.Dictionary<string, int>? _settings;
     private readonly System.Windows.Forms.Timer _scanTimer;
+    private readonly System.Windows.Forms.Timer _telemetryTimer;
+    private bool _telemetryRetryRunning;
     private int _pollingIntervalSeconds = 60;
     private readonly Dictionary<string, string> _presetIconCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _defaultLogoPath;
@@ -69,6 +71,10 @@ public class TrayForm : Form
 
         _scanTimer = new System.Windows.Forms.Timer { Interval = 60_000 };
         _scanTimer.Tick += (_, _) => RunScan();
+
+        _telemetryTimer = new System.Windows.Forms.Timer { Interval = 300_000 }; // 5 minutes
+        _telemetryTimer.Tick += TelemetryTimer_Tick;
+        _telemetryTimer.Start();
 
         _defaultLogoPath = EnsureDefaultLogo();
         Visible = false;
@@ -165,8 +171,24 @@ public class TrayForm : Form
         {
             _tray.Dispose();
             _scanTimer.Dispose();
+            _telemetryTimer.Dispose();
         }
         base.Dispose(disposing);
+    }
+
+    private async void TelemetryTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_telemetryRetryRunning) return;
+        _telemetryRetryRunning = true;
+        try
+        {
+            await _telemetry.RetryPendingAsync();
+        }
+        catch { }
+        finally
+        {
+            _telemetryRetryRunning = false;
+        }
     }
 
     private void RunScan()
