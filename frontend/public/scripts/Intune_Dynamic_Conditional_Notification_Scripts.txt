@@ -1,0 +1,101 @@
+
+==============================
+DYNAMIC & CONDITIONAL POWERSHELL NOTIFICATION SCRIPTS
+Total: 20
+==============================
+
+--- 1. Disk Space Warning (Dynamic) ---
+$drive = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
+$freeGB = [math]::Round($drive.FreeSpace / 1GB, 1)
+$totalGB = [math]::Round($drive.Size / 1GB, 1)
+"Disk space: $freeGB GB free of $totalGB GB"
+
+--- 2. Reboot Pending (Conditional) ---
+$paths = @(
+ "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending",
+ "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired"
+)
+foreach ($p in $paths) { if (Test-Path $p) { exit 0 } }
+exit 1
+
+--- 3. Last User Logon (Dynamic) ---
+$profile = Get-CimInstance Win32_UserProfile | Where-Object LastUseTime |
+ Sort-Object LastUseTime -Descending | Select-Object -First 1
+$user = ($profile.LocalPath -split '\\')[-1]
+$time = [Management.ManagementDateTimeConverter]::ToDateTime($profile.LastUseTime)
+"Last user: $user at $($time.ToString('yyyy-MM-dd HH:mm'))"
+
+--- 4. Uptime > 7 Days (Conditional) ---
+$uptime = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+if ((New-TimeSpan $uptime (Get-Date)).Days -ge 7) { exit 0 }
+exit 1
+
+--- 5. Last Update Failure (Dynamic) ---
+$e = Get-WinEvent -LogName System -MaxEvents 50 |
+ Where Message -match "fail" | Select-Object -First 1
+if ($e) { "Last update failure: $($e.TimeCreated)" }
+
+--- 6. Zscaler Not Running (Conditional) ---
+if (Get-Process zsa* -ErrorAction SilentlyContinue) { exit 1 }
+exit 0
+
+--- 7. Battery Level (Dynamic) ---
+$b = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue
+if ($b) { "Battery level: $($b.EstimatedChargeRemaining)%" }
+
+--- 8. Defender RTP Disabled (Conditional) ---
+if (-not (Get-MpComputerStatus).RealTimeProtectionEnabled) { exit 0 }
+exit 1
+
+--- 9. IME Failure Present (Conditional) ---
+$log = "$env:ProgramData\Microsoft\IntuneManagementExtension\Logs\IntuneManagementExtension.log"
+if (Test-Path $log -and (Select-String $log "Install failed" -Quiet)) { exit 0 }
+exit 1
+
+--- 10. Current Time Zone (Dynamic) ---
+"Current time zone: $((Get-TimeZone).DisplayName)"
+
+--- 11. Low RAM Warning (Dynamic) ---
+$os = Get-CimInstance Win32_OperatingSystem
+$free = [math]::Round($os.FreePhysicalMemory/1MB,1)
+"Free memory: $free GB"
+
+--- 12. TPM Missing (Conditional) ---
+if (-not (Get-Tpm).TpmPresent) { exit 0 }
+exit 1
+
+--- 13. BitLocker Disabled (Conditional) ---
+$status = Get-BitLockerVolume -MountPoint C:
+if ($status.ProtectionStatus -ne 'On') { exit 0 }
+exit 1
+
+--- 14. OS Build Display (Dynamic) ---
+$os = Get-CimInstance Win32_OperatingSystem
+"Windows build: $($os.BuildNumber)"
+
+--- 15. Cloud PC Detection (Conditional) ---
+if ($env:COMPUTERNAME -like "CPC-*") { exit 0 }
+exit 1
+
+--- 16. No Network Connectivity (Conditional) ---
+if (-not (Test-Connection 8.8.8.8 -Count 1 -Quiet)) { exit 0 }
+exit 1
+
+--- 17. User Profile Count (Dynamic) ---
+$count = (Get-CimInstance Win32_UserProfile).Count
+"Local user profiles: $count"
+
+--- 18. Secure Boot Disabled (Conditional) ---
+try {
+ if (-not (Confirm-SecureBootUEFI)) { exit 0 }
+} catch { exit 0 }
+exit 1
+
+--- 19. Windows Update Service Stopped (Conditional) ---
+$svc = Get-Service wuauserv
+if ($svc.Status -ne 'Running') { exit 0 }
+exit 1
+
+--- 20. Device Serial Number (Dynamic) ---
+$sn = (Get-CimInstance Win32_BIOS).SerialNumber
+"Device serial number: $sn"

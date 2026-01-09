@@ -46,9 +46,11 @@ public class ModuleIconController : ControllerBase
             await file.CopyToAsync(stream, ct);
         }
 
-        module.IconFileName = safeName;
-        module.IconOriginalName = file.FileName;
-        module.LastModifiedAtUtc = DateTime.UtcNow;
+        var userId = Guid.Empty;
+        var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(sub, out var parsed)) userId = parsed;
+
+        module.UpdateIcon(safeName, file.FileName, userId);
         await _modules.SaveChangesAsync(ct);
 
         var previewUrl = Url.ActionLink(nameof(GetIcon), values: new { id });

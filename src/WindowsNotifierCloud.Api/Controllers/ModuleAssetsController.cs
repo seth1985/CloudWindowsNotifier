@@ -33,8 +33,12 @@ public class ModuleAssetsController : ControllerBase
         if (file == null || file.Length == 0) return BadRequest("File is required.");
 
         var stored = await _storage.SaveAssetAsync(id, file, ct);
-        module.IconFileName = stored.FileName;
-        module.IconOriginalName = stored.OriginalName;
+        
+        var userId = Guid.Empty;
+        var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(sub, out var parsed)) userId = parsed;
+
+        module.UpdateIcon(stored.FileName, stored.OriginalName, userId);
         await _modules.SaveChangesAsync(ct);
 
         return Ok(new { fileName = stored.FileName, originalName = stored.OriginalName });

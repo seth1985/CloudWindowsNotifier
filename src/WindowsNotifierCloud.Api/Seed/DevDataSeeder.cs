@@ -36,7 +36,7 @@ public sealed class DevDataSeeder
             LocalUsername = "admin",
             DisplayName = "Admin (DevLocal)",
             PasswordHash = PasswordHasher.HashPassword("P@ssw0rd!"),
-            Role = PortalRole.Advanced,
+            Role = PortalRole.Admin,
             CreatedAtUtc = DateTime.UtcNow
         };
 

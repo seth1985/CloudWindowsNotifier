@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ModuleDefinition> ModuleDefinitions => Set<ModuleDefinition>();
     public DbSet<TelemetryEvent> TelemetryEvents => Set<TelemetryEvent>();
     public DbSet<PowerShellTemplate> PowerShellTemplates => Set<PowerShellTemplate>();
+    public DbSet<UserDefinition> Users => Set<UserDefinition>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,6 +119,19 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(t => t.CreatedByUserId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UserDefinition>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(u => u.Id);
+            entity.Property(u => u.DisplayName).IsRequired().HasMaxLength(200);
+            entity.Property(u => u.Email).IsRequired().HasMaxLength(320);
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.Role).IsRequired().HasMaxLength(50).HasDefaultValue("Standard");
+            entity.Property(u => u.AvatarUrl).HasMaxLength(500);
+            entity.Property(u => u.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(u => u.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
     }
 }

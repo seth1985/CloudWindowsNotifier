@@ -29,57 +29,65 @@ export const DynamicFields: React.FC<Props> = ({
   dynamicFallbackMessage,
   setDynamicFallbackMessage
 }) => (
-  <div className="form-card">
-    <div className="section-head">
-      <h4>Behavior</h4>
-      <div className="button-row">
-        <p className="hint">Runs a dynamic PowerShell script that returns title/message/link/icon.</p>
-      </div>
+  <div className="space-y-8">
+    <div className="flex flex-col gap-2 p-5 bg-primary-main/5 border border-primary-main/20 rounded-xl">
+      <h4 className="text-[10px] font-black text-primary-main uppercase tracking-[0.2em]">Execution Policy: Dynamic Content</h4>
+      <p className="text-xs font-bold text-text-secondary">Runs a PowerShell script that returns title/message/link/icon metadata dynamically.</p>
     </div>
-    <label>
-      Dynamic script (PowerShell)
+
+    <div className="space-y-2.5">
+      <label className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.15em] ml-1">Script Template (PowerShell)</label>
       <textarea
-        placeholder="Write or paste the dynamic script..."
+        placeholder="# Example: Write-Output 'Dynamic Message'"
+        rows={8}
         value={dynamicScript}
         onChange={(e) => setDynamicScript(e.target.value)}
-        className="script-area"
+        className="w-full bg-black/40 border border-border-input rounded-xl px-4 py-4 text-[11px] text-green-400 font-mono focus:ring-2 focus:ring-primary-main/50 outline-none transition-all resize-none leading-relaxed"
       />
-    </label>
-    <div className="stack two">
-      <label>
-        Max length
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+      <div className="space-y-2.5">
+        <label className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.15em] ml-1">Maximum Content Length</label>
         <input
           type="number"
           min="1"
           value={dynamicMaxLength}
           onChange={(e) => setDynamicMaxLength(e.target.value)}
-          className="narrow-input"
+          className="input"
         />
-      </label>
-      <label className="checkbox-row left-align">
+      </div>
+
+      <div className="space-y-4 pt-4">
+        <label className="flex items-center gap-4 cursor-pointer group">
+          <input
+            type="checkbox"
+            className="w-5 h-5 rounded border-border bg-input text-primary-main focus:ring-primary-main transition-all cursor-pointer"
+            checked={dynamicTrimWhitespace}
+            onChange={(e) => setDynamicTrimWhitespace(e.target.checked)}
+          />
+          <span className="text-sm font-bold text-text-secondary group-hover:text-text-primary transition-colors">Trim whitespace</span>
+        </label>
+        <label className="flex items-center gap-4 cursor-pointer group">
+          <input
+            type="checkbox"
+            className="w-5 h-5 rounded border-border bg-input text-primary-main focus:ring-primary-main transition-all cursor-pointer"
+            checked={dynamicFailIfEmpty}
+            onChange={(e) => setDynamicFailIfEmpty(e.target.checked)}
+          />
+          <span className="text-sm font-bold text-text-secondary group-hover:text-text-primary transition-colors">Fail on empty result</span>
+        </label>
+      </div>
+
+      <div className="space-y-2.5 md:col-span-2">
+        <label className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.15em] ml-1">Execution Fallback Message</label>
         <input
-          type="checkbox"
-          checked={dynamicTrimWhitespace}
-          onChange={(e) => setDynamicTrimWhitespace(e.target.checked)}
-        />
-        <span>Trim whitespace</span>
-      </label>
-      <label className="checkbox-row left-align">
-        <input
-          type="checkbox"
-          checked={dynamicFailIfEmpty}
-          onChange={(e) => setDynamicFailIfEmpty(e.target.checked)}
-        />
-        <span>Fail if empty</span>
-      </label>
-      <label>
-        Fallback message
-        <input
-          placeholder="Optional fallback message"
+          className="input"
+          placeholder="Message to display if logic fails or returns null..."
           value={dynamicFallbackMessage}
           onChange={(e) => setDynamicFallbackMessage(e.target.value)}
         />
-      </label>
+      </div>
     </div>
   </div>
 );

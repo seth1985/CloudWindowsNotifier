@@ -22,4 +22,20 @@ public class DebugController : ControllerBase
             .ToListAsync(ct);
         return Ok(users);
     }
+
+    [HttpPost("users/{id}/role")]
+    public async Task<IActionResult> UpdateRole(Guid id, [FromBody] string role, CancellationToken ct)
+    {
+        var user = await _db.PortalUsers.FindAsync(new object[] { id }, ct);
+        if (user == null) return NotFound();
+        
+        if (Enum.TryParse<Domain.Entities.PortalRole>(role, out var parsedRole))
+        {
+            user.Role = parsedRole;
+            await _db.SaveChangesAsync(ct);
+            return Ok(new { user.Id, user.LocalUsername, user.Role });
+        }
+        return BadRequest("Invalid role");
+    }
+
 }

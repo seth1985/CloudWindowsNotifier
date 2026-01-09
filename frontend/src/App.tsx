@@ -9,6 +9,8 @@ import { TemplateCreateModal } from './features/templates/components/TemplateCre
 import { useTelemetry } from './features/telemetry/useTelemetry';
 import { TelemetryOverview } from './features/telemetry/components/TelemetryOverview';
 import type { NotificationType } from './types';
+import { Layout } from './components/layout/Layout';
+import { UsersPage } from './features/users/components/UsersPage';
 
 const DEFAULT_API_BASE = 'http://localhost:5210';
 
@@ -31,7 +33,9 @@ export default function App() {
   } = useAuth(DEFAULT_API_BASE);
 
   const authed = Boolean(token);
-  const isAdvanced = role === 'Advanced';
+  const isAdmin = role === 'Admin';
+  // Advanced users see advanced features; Admins see everything including advanced.
+  const isAdvanced = role === 'Advanced' || role === 'Admin';
 
   useEffect(() => {
     const stored = localStorage.getItem('wnc_api_base');
@@ -45,6 +49,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('wnc_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  /* New Layout State */
+  const [activeTab, setActiveTab] = useState('modules');
 
   const {
     modules,
@@ -107,16 +114,19 @@ export default function App() {
     loadTelemetry
   } = useTelemetry(apiBase, token, setStatus);
 
-  const visibleTabs: NotificationType[] = isAdvanced
-    ? ['Standard', 'Conditional', 'Dynamic', 'Hero', 'CoreSettings']
-    : ['Standard', 'Conditional', 'Dynamic', 'Hero'];
-
   // Prevent lingering CoreSettings selection for non-advanced users
   useEffect(() => {
     if (!isAdvanced && formType === 'CoreSettings') {
       setFormType('Standard');
     }
   }, [isAdvanced, formType, setFormType]);
+
+  // Prevent accessing restricted tabs if role was downgraded
+  useEffect(() => {
+    if (!isAdmin && activeTab === 'users') {
+      setActiveTab('modules');
+    }
+  }, [isAdmin, activeTab]);
 
   const openTemplateGallery = () => {
     const mode: 'conditional' | 'dynamic' =
@@ -149,131 +159,129 @@ export default function App() {
     setStatus('Copied script to clipboard (or attempted clipboard write).');
   };
 
+  /* Logic to toggle theme */
+  const toggleTheme = () => setDarkMode(!darkMode);
+
+  /* Render */
   return (
-    <div className={`page ${authed ? '' : 'unauth'} ${darkMode ? 'dark' : ''}`}>
-      <nav className="top-nav">
-        <div className="brand">Windows Notifier Cloud Admin</div>
-        <div className="tabs type-tabs">
-          {visibleTabs.map((t) => (
-            <span
-              key={t}
-              className={`tab ${formType === t ? 'active' : ''}`}
-              onClick={() => setFormType(t)}
-            >
-              {t === 'CoreSettings' ? 'Core Settings' : `${t} Notification`}
-            </span>
-          ))}
-        </div>
-        <div className="actions">
-          <button onClick={() => setDarkMode((d) => !d)}>{darkMode ? 'Light mode' : 'Dark mode'}</button>
-        </div>
-      </nav>
-
-      {!authed && (
-        <LoginPanel
-          apiBase={apiBase}
-          setApiBase={setApiBase}
-          username={username}
-          setUsername={setUsername}
-          password={password}
-          setPassword={setPassword}
-          loading={authLoading}
-          status={status}
-          onLogin={handleLogin}
-        />
-      )}
-
-      {authed && (
-        <>
-          <header className="hero">
-            <div>
-              <h1>Cloud Admin Portal</h1>
-              <p>Manage modules, monitor telemetry, and export to Dev Core.</p>
-              <div className="connected">Connected to {apiBase} as {username}</div>
-            </div>
-            <div className="actions">
-              <span className="actions-placeholder"></span>
-            </div>
-          </header>
-          <div className={`status ${status ? 'visible' : ''}`}>{status}</div>
-
-          <ModulesPage
-            modules={modules}
-            filteredModules={filteredModules}
-            loading={modulesLoading}
-            search={search}
-            setSearch={setSearch}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            selectedIds={selectedIds}
-            setSelectedIds={setSelectedIds}
-            selectedModuleId={selectedModuleId}
-            reload={loadModules}
-            formType={formType}
-            setFormType={setFormType}
-            formState={formState as any}
-            setFormState={setFormState as any}
-            resetForm={resetForm}
-            saveModule={saveModule}
-            disableSave={!token || modulesLoading}
-            onOpenTemplates={openTemplateGallery}
-            onIconFileSelected={(f) => setIconFile(f)}
-            onHeroFileSelected={(f) => setHeroFile(f)}
-            iconPreviewUrl={iconPreviewUrl}
-            heroPreviewUrl={heroLocalPreview}
-            onExportSelected={exportDevCoreSelected}
-            onExportRow={exportModule}
-            onRemoveRow={removeModule}
-            onRemoveSelected={removeSelected}
+    <div className={darkMode ? 'dark' : ''}>
+      <Layout
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        darkMode={darkMode}
+        toggleTheme={toggleTheme}
+        onLogout={() => { /* token clearing logic if existed, currently just reload/clear */ location.reload(); }}
+        username={username}
+        apiBase={apiBase}
+        authed={authed}
+      >
+        {!authed ? (
+          <LoginPanel
+            apiBase={apiBase}
+            setApiBase={setApiBase}
+            username={username}
+            setUsername={setUsername}
+            password={password}
+            setPassword={setPassword}
+            loading={authLoading}
+            status={status}
+            onLogin={handleLogin}
           />
+        ) : (
+          <>
+            {/* Simple Status Bar if needed, or integrate into Sidebar */}
+            {status && <div className="mb-4 p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-sm dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-900/50">{status}</div>}
 
-          <TelemetryOverview
-            summary={telemetrySummary}
-            perModule={telemetryModules}
-            loading={telemetryLoading}
-            onRefresh={loadTelemetry}
-          />
+            {activeTab === 'modules' && (
+              <ModulesPage
+                modules={modules}
+                filteredModules={filteredModules}
+                loading={modulesLoading}
+                search={search}
+                setSearch={setSearch}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                selectedIds={selectedIds}
+                setSelectedIds={setSelectedIds}
+                selectedModuleId={selectedModuleId}
+                reload={loadModules}
+                formType={formType}
+                setFormType={setFormType}
+                formState={formState as any}
+                setFormState={setFormState as any}
+                resetForm={resetForm}
+                saveModule={saveModule}
+                disableSave={!token || modulesLoading}
+                onOpenTemplates={openTemplateGallery}
+                onIconFileSelected={(f) => setIconFile(f)}
+                onHeroFileSelected={(f) => setHeroFile(f)}
+                iconPreviewUrl={iconPreviewUrl}
+                heroPreviewUrl={heroLocalPreview}
+                onExportSelected={exportDevCoreSelected}
+                onExportRow={exportModule}
+                onRemoveRow={removeModule}
+                onRemoveSelected={removeSelected}
+                isAdvanced={isAdvanced}
+                isAdmin={isAdmin}
+              />
+            )}
 
-          <TemplateGalleryModal
-            isOpen={showGallery}
-            mode={tplMode}
-            templates={templates}
-            loading={templatesLoading}
-            onClose={() => setShowGallery(false)}
-            onRefresh={() => loadTemplates(tplMode)}
-            onInsert={(tpl) => handleInsertTemplate(tpl.scriptBody)}
-            onCopy={handleCopyTemplate}
-            onCreateNew={() => setShowCreate(true)}
-            onEdit={(tpl) => {
-              beginTplEdit(tpl);
-              setShowGallery(false);
-            }}
-            onRemove={(tpl) => {
-              if (confirm(`Remove template \"${tpl.title}\"?`)) {
-                removeTpl(tpl);
-              }
-            }}
-          />
+            {activeTab === 'telemetry' && (
+              <TelemetryOverview
+                summary={telemetrySummary}
+                perModule={telemetryModules}
+                loading={telemetryLoading}
+                onRefresh={loadTelemetry}
+              />
+            )}
 
-          <TemplateCreateModal
-            isOpen={showCreate}
-            onClose={handleCloseTemplateModal}
-            title={tplTitle}
-            setTitle={setTplTitle}
-            description={tplDescription}
-            setDescription={setTplDescription}
-            category={tplCategory}
-            setCategory={setTplCategory}
-            type={tplType}
-            setType={setTplType}
-            script={tplScript}
-            setScript={setTplScript}
-            onSave={saveTemplate}
-            loading={templatesLoading}
-            isEditing={!!tplEditingId}
-          />
-        </>
-      )}
+            {activeTab === 'users' && isAdmin && (
+              <UsersPage currentUserEmail={username} apiBase={apiBase} token={token} />
+            )}
+
+
+            {/* Modals outside the conditional content flow */}
+            <TemplateGalleryModal
+              isOpen={showGallery}
+              mode={tplMode}
+              templates={templates}
+              loading={templatesLoading}
+              onClose={() => setShowGallery(false)}
+              onRefresh={() => loadTemplates(tplMode)}
+              onInsert={(tpl) => handleInsertTemplate(tpl.scriptBody)}
+              onCopy={handleCopyTemplate}
+              onCreateNew={() => setShowCreate(true)}
+              onEdit={(tpl) => {
+                beginTplEdit(tpl);
+                setShowGallery(false);
+              }}
+              onRemove={(tpl) => {
+                if (confirm(`Remove template "${tpl.title}"?`)) {
+                  removeTpl(tpl);
+                }
+              }}
+            />
+
+            <TemplateCreateModal
+              isOpen={showCreate}
+              onClose={handleCloseTemplateModal}
+              title={tplTitle}
+              setTitle={setTplTitle}
+              description={tplDescription}
+              setDescription={setTplDescription}
+              category={tplCategory}
+              setCategory={setTplCategory}
+              type={tplType}
+              setType={setTplType}
+              script={tplScript}
+              setScript={setTplScript}
+              onSave={saveTemplate}
+              loading={templatesLoading}
+              isEditing={!!tplEditingId}
+            />
+          </>
+        )}
+      </Layout>
     </div>
   );
 }

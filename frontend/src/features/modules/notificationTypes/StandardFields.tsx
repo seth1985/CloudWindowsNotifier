@@ -8,24 +8,26 @@ type Props = {
 };
 
 export const StandardFields: React.FC<Props> = ({ title, setTitle, message, setMessage }) => (
-  <>
-    <label>
-      Title
+  <div className="space-y-6">
+    <div className="space-y-2.5">
+      <span className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.15em] ml-1">Notification Title</span>
       <input
-        placeholder="Notification title"
+        className="input"
+        placeholder="Enter short title"
         maxLength={60}
         value={title}
         onChange={(e) => setTitle(e.target.value.slice(0, 60))}
       />
-    </label>
-    <label>
-      Message
+    </div>
+    <div className="space-y-2.5">
+      <span className="block text-[10px] font-black text-text-secondary uppercase tracking-[0.15em] ml-1">Toast Content</span>
       <textarea
-        placeholder="Notification message (160 chars)"
+        className="input h-32 resize-none"
+        placeholder="Enter primary notification message..."
         maxLength={160}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
       />
-    </label>
-  </>
+    </div>
+  </div>
 );

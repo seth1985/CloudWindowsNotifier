@@ -1,22 +1,25 @@
 import { useState } from 'react';
 import { login } from './api';
+import type { UserRole } from '../../types';
 
 export function useAuth(initialApiBase: string) {
   const [apiBase, setApiBase] = useState(initialApiBase);
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('P@ssw0rd!');
   const [token, setToken] = useState<string | null>(null);
-  const [role, setRole] = useState<'Basic' | 'Advanced'>('Basic');
+  const [role, setRole] = useState<UserRole>('Admin'); // Default to Admin for now to unblock UI
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
 
-  const decodeRole = (jwt: string): 'Basic' | 'Advanced' => {
+  const decodeRole = (jwt: string): UserRole => {
     try {
       const payload = JSON.parse(atob(jwt.split('.')[1] || ''));
-      const claim = payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-      return claim === 'Advanced' ? 'Advanced' : 'Basic';
+      const claim = String(payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '').toLowerCase();
+      if (claim === 'admin') return 'Admin';
+      if (claim === 'advanced') return 'Advanced';
+      return 'Standard';
     } catch {
-      return 'Basic';
+      return 'Standard';
     }
   };
 
@@ -30,7 +33,7 @@ export function useAuth(initialApiBase: string) {
       setStatus(`Logged in as ${username}`);
     } catch (err: any) {
       setToken(null);
-      setRole('Basic');
+      setRole('Standard');
       setStatus(err?.message ?? 'Login failed.');
     } finally {
       setLoading(false);

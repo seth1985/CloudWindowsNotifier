@@ -10,8 +10,12 @@ using WindowsNotifierCloud.Infrastructure.Repositories;
 using WindowsNotifierCloud.Api.Seed;
 using System.IdentityModel.Tokens.Jwt;
 using WindowsNotifierCloud.Api.Services;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Prevent mapping of short claim names to long URIs
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 // Bind environment mode (DevelopmentLocal or ProductionCloud)
 var envSection = builder.Configuration.GetSection("Environment");
@@ -59,6 +63,8 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
@@ -101,8 +107,8 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtOpts.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOpts.Key)),
         ClockSkew = TimeSpan.FromMinutes(1),
-        RoleClaimType = "role",
-        NameClaimType = JwtRegisteredClaimNames.Sub
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+        NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier
     };
 });
 
@@ -112,7 +118,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser());
 
     options.AddPolicy("AdvancedOnly", policy =>
-        policy.RequireClaim("role", "Advanced"));
+        policy.RequireRole("Advanced"));
+
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
 });
 
 var app = builder.Build();
@@ -139,3 +148,5 @@ if (string.Equals(environmentMode, "DevelopmentLocal", StringComparison.OrdinalI
 }
 
 app.Run();
+// Log success
+Console.WriteLine("API is running and ready.");

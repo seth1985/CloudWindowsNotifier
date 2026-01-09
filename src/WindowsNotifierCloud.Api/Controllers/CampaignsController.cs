@@ -12,14 +12,12 @@ namespace WindowsNotifierCloud.Api.Controllers;
 public class CampaignsController : ControllerBase
 {
     private readonly ICampaignRepository _campaigns;
-    private readonly EnvironmentOptions _envOptions;
-    private readonly ApplicationDbContext _db;
+    private readonly MediatR.ISender _sender;
 
-    public CampaignsController(ICampaignRepository campaigns, EnvironmentOptions envOptions, ApplicationDbContext db)
+    public CampaignsController(ICampaignRepository campaigns, MediatR.ISender sender)
     {
         _campaigns = campaigns;
-        _envOptions = envOptions;
-        _db = db;
+        _sender = sender;
     }
 
     [HttpGet]
@@ -43,63 +41,44 @@ public class CampaignsController : ControllerBase
     [Authorize(Policy = "AdvancedOnly")]
     public async Task<ActionResult<CampaignDto>> Create([FromBody] CampaignCreateRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            return BadRequest("Name is required.");
-
-        var userId = ResolveUserId();
-
-        var campaign = new Campaign
+        try
         {
-            Id = Guid.NewGuid(),
-            Name = request.Name.Trim(),
-            Description = request.Description?.Trim(),
-            CreatedAtUtc = DateTime.UtcNow,
-            CreatedByUserId = userId
-        };
-
-        await _campaigns.AddAsync(campaign, ct);
-        await _campaigns.SaveChangesAsync(ct);
-
-        return CreatedAtAction(nameof(Get), new { id = campaign.Id }, campaign.ToDto());
+            var command = new WindowsNotifierCloud.Api.Features.Campaigns.CreateCampaign.Command(request, User);
+            var campaign = await _sender.Send(command, ct);
+            return CreatedAtAction(nameof(Get), new { id = campaign.Id }, campaign.ToDto());
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "AdvancedOnly")]
     public async Task<ActionResult<CampaignDto>> Update(Guid id, [FromBody] CampaignUpdateRequest request, CancellationToken ct)
     {
-        var entity = await _campaigns.GetAsync(id, ct);
-        if (entity == null) return NotFound();
-
-        entity.Name = request.Name?.Trim() ?? entity.Name;
-        entity.Description = request.Description?.Trim();
-
-        await _campaigns.SaveChangesAsync(ct);
-        return entity.ToDto();
+        try
+        {
+            var command = new WindowsNotifierCloud.Api.Features.Campaigns.UpdateCampaign.Command(id, request);
+            var entity = await _sender.Send(command, ct);
+            
+            if (entity == null) return NotFound();
+            return entity.ToDto();
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "AdvancedOnly")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var entity = await _campaigns.GetAsync(id, ct);
-        if (entity == null) return NotFound();
-
-        // Soft delete not specified; perform hard delete for now.
-        // Note: navigation to modules not cascaded here; ensure FK rules in schema.
-        _campaigns.Delete(entity);
-        await _campaigns.SaveChangesAsync(ct);
+        var command = new WindowsNotifierCloud.Api.Features.Campaigns.DeleteCampaign.Command(id);
+        var success = await _sender.Send(command, ct);
+        
+        if (!success) return NotFound();
         return NoContent();
-    }
-
-    private Guid ResolveUserId()
-    {
-        var sub = User.FindFirst("sub")?.Value;
-        if (Guid.TryParse(sub, out var parsed))
-        {
-            return parsed;
-        }
-
-        var fallback = _db.PortalUsers.Select(u => u.Id).FirstOrDefault();
-        return fallback != Guid.Empty ? fallback : Guid.NewGuid();
     }
 }

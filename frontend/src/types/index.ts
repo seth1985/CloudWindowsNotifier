@@ -1,3 +1,14 @@
+export type UserRole = 'Standard' | 'Advanced' | 'Admin';
+
+export type User = {
+  id: string;
+  displayName: string;
+  email: string;
+  role: UserRole;
+  avatarUrl?: string;
+  lastLogin?: string;
+};
+
 export type NotificationType = 'Standard' | 'Conditional' | 'Dynamic' | 'Hero' | 'CoreSettings';
 
 export type ModuleRow = {

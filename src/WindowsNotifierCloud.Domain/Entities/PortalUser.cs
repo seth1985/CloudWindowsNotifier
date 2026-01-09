@@ -2,8 +2,9 @@ namespace WindowsNotifierCloud.Domain.Entities;
 
 public enum PortalRole
 {
-    Basic,
-    Advanced
+    Standard,
+    Advanced,
+    Admin
 }
 
 public class PortalUser

@@ -62,7 +62,7 @@ core\WindowsNotifierTray\bin\Release\net6.0-windows10.0.19041.0\WindowsNotifierT
   - Templates: `GET /api/templates?type=conditional|dynamic|both`, `POST /api/templates`, `PUT /api/templates/{id}`, `DELETE /api/templates/{id}`
 
 ### Frontend
-- Vite/React app at `frontend` (modular pages under `frontend/src/wnc_modular`).
+- Vite/React app at `frontend` (modular pages under `frontend/src/features`).
 - Runs on 5173 by default; API base is configurable in the UI.
 - Offers module builder (Standard, Conditional, Dynamic, Hero, Core Settings), telemetry view, and PowerShell Templates gallery.
 

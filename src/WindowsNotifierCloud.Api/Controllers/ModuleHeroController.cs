@@ -69,9 +69,11 @@ public class ModuleHeroController : ControllerBase
         var targetPath = Path.Combine(targetDir, "hero.png");
         await System.IO.File.WriteAllBytesAsync(targetPath, mem.ToArray(), ct);
 
-        module.HeroFileName = "hero.png";
-        module.HeroOriginalName = file.FileName;
-        module.LastModifiedAtUtc = DateTime.UtcNow;
+        var userId = Guid.Empty;
+        var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(sub, out var parsed)) userId = parsed;
+
+        module.UpdateHero("hero.png", file.FileName, userId);
         await _modules.SaveChangesAsync(ct);
 
         var previewUrl = Url.ActionLink(nameof(GetHero), values: new { id });

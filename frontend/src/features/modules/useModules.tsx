@@ -71,7 +71,7 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
     conditionalScript: '',
     conditionalInterval: '60',
     dynamicScript: '',
-    dynamicMaxLength: '240',
+    dynamicMaxLength: '160',
     dynamicTrimWhitespace: true,
     dynamicFailIfEmpty: true,
     dynamicFallbackMessage: '',
@@ -170,14 +170,14 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
       heroOriginalName: type === 'Hero' && heroFile ? heroFile.name : null,
       coreSettings: type === 'CoreSettings'
         ? {
-            enabled: coreEnabled ? 1 : 0,
-            autoClearModules: coreAutoClear ? 1 : 0,
-            pollingIntervalSeconds: Number(corePolling || '0') || 300,
-            heartbeatSeconds: Number(coreHeartbeat || '0') || 15,
-            soundEnabled: coreSound ? 1 : 0,
-            exitMenuVisible: coreExitVisible ? 1 : 0,
-            startStopMenuVisible: coreStartStopVisible ? 1 : 0
-          } as CoreSettingsBlock
+          enabled: coreEnabled ? 1 : 0,
+          autoClearModules: coreAutoClear ? 1 : 0,
+          pollingIntervalSeconds: Number(corePolling || '0') || 300,
+          heartbeatSeconds: Number(coreHeartbeat || '0') || 15,
+          soundEnabled: coreSound ? 1 : 0,
+          exitMenuVisible: coreExitVisible ? 1 : 0,
+          startStopMenuVisible: coreStartStopVisible ? 1 : 0
+        } as CoreSettingsBlock
         : null
     };
 
