@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Globe, Lock, Terminal, ChevronRight } from 'lucide-react';
+import { Shield, Globe, Lock, Terminal, ChevronRight, Info } from 'lucide-react';
 import type { NotificationType } from '../../../types';
 import { StandardFields } from '../notificationTypes/StandardFields';
 import { ConditionalFields } from '../notificationTypes/ConditionalFields';
@@ -354,6 +354,23 @@ export const ModuleForm: React.FC<Props> = ({
                       </div>
                     )}
                   </div>
+
+                  {formType === 'Hero' && (
+                    <div className="mt-4 flex gap-2.5 p-3.5 bg-primary-main/5 rounded-xl border border-primary-main/10 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="mt-0.5 text-primary-main">
+                        <Info className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-text-primary uppercase tracking-wider">Image Requirements</p>
+                        <ul className="text-[10px] text-text-tertiary font-medium leading-relaxed space-y-0.5">
+                          <li>• <span className="text-text-secondary font-bold">Format:</span> PNG files only</li>
+                          <li>• <span className="text-text-secondary font-bold">Max Size:</span> 1.0 MB</li>
+                          <li>• <span className="text-text-secondary font-bold">Aspect:</span> ~2:1 ratio (Tolerance 3%)</li>
+                          <li>• <span className="text-text-secondary font-bold">Dimensions:</span> 364×180px to 728×364px</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="w-full md:w-40 space-y-2.5">

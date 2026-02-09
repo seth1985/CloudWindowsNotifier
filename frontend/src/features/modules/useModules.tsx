@@ -15,19 +15,19 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
   const [heroPreviewUrl, setHeroPreviewUrl] = useState<string | null>(null);
   const [localHeroPreview, setLocalHeroPreview] = useState<string | null>(null);
 
-  const loadModules = async () => {
+  const loadModules = async (silent = false) => {
     if (!token) {
-      setGlobalStatus('Login first.');
+      if (!silent) setGlobalStatus('Login first.');
       return;
     }
     try {
       setLoading(true);
-      setGlobalStatus('Loading modules...');
+      if (!silent) setGlobalStatus('Loading modules...');
       const data = await getModules(apiBase, token);
       setModules(data);
-      setGlobalStatus(`Loaded ${data.length} modules.`);
+      if (!silent) setGlobalStatus(`Loaded ${data.length} modules.`);
     } catch (err: any) {
-      setGlobalStatus(err?.message ?? 'Error loading modules.');
+      if (!silent) setGlobalStatus(err?.message ?? 'Error loading modules.');
     } finally {
       setLoading(false);
     }
@@ -187,6 +187,7 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
       const created = await createModule(apiBase, token, payload);
       setGlobalStatus('Created module.');
 
+      let uploadSuccess = true;
       if (iconFile && created?.id && formType !== 'Hero' && formType !== 'CoreSettings') {
         try {
           setGlobalStatus('Uploading icon...');
@@ -194,6 +195,7 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
           setIconPreviewUrl(getIconUrl(apiBase, created.id));
           setGlobalStatus('Created module and uploaded icon.');
         } catch (err: any) {
+          uploadSuccess = false;
           setGlobalStatus(`Module created, but icon upload failed: ${err?.message ?? err}`);
         } finally {
           setIconFile(null);
@@ -207,14 +209,21 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
           setHeroPreviewUrl(getHeroUrl(apiBase, created.id));
           setGlobalStatus('Created module and uploaded hero image.');
         } catch (err: any) {
+          uploadSuccess = false;
           setGlobalStatus(`Module created, but hero upload failed: ${err?.message ?? err}`);
         } finally {
           setHeroFile(null);
         }
       }
 
-      await loadModules();
-      resetForm(formType);
+      if (uploadSuccess) {
+        await loadModules();
+        resetForm(formType);
+      } else {
+        // If upload failed, reload modules so they see the draft, but don't reset the form
+        // so they can try fixing and re-saving (though they'd need to handle ModuleId conflict)
+        await loadModules(true);
+      }
     } catch (err: any) {
       setGlobalStatus(err?.message ?? 'Error creating module.');
     } finally {

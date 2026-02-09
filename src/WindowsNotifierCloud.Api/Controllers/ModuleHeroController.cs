@@ -50,9 +50,9 @@ public class ModuleHeroController : ControllerBase
             const double aspectTarget = 2.0;
             var aspect = (double)w / h;
             var aspectDiff = Math.Abs(aspect - aspectTarget) / aspectTarget;
-            if (w < 364 || h < 180 || w > 728 || h > 360 || aspectDiff > 0.03)
+            if (w < 364 || h < 180 || w > 728 || h > 364 || aspectDiff > 0.03)
             {
-                return BadRequest($"Hero image must be between 364x180 and 728x360 with ~2:1 aspect (found {w}x{h}).");
+                return BadRequest($"Hero image must be between 364x180 and 728x364 with ~2:1 aspect (found {w}x{h}).");
             }
         }
         catch
