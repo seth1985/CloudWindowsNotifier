@@ -26,6 +26,7 @@ export default function App() {
     setPassword,
     token,
     role,
+    authProvider,
     loading: authLoading,
     status,
     setStatus,
@@ -177,6 +178,7 @@ export default function App() {
       >
         {!authed ? (
           <LoginPanel
+            authProvider={authProvider}
             apiBase={apiBase}
             setApiBase={setApiBase}
             username={username}

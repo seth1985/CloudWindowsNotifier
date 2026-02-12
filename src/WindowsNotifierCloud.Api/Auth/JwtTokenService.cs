@@ -25,7 +25,9 @@ public class JwtTokenService
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("role", user.Role.ToString())
+            // Emit both role claim styles for compatibility with different JWT handlers/policies.
+            new Claim("role", user.Role.ToString()),
+            new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
         if (!string.IsNullOrWhiteSpace(user.UserPrincipalName))

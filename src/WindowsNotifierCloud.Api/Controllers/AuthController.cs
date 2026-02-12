@@ -14,24 +14,24 @@ public class AuthController : ControllerBase
 {
     private readonly IPortalUserRepository _users;
     private readonly JwtTokenService _jwt;
-    private readonly EnvironmentOptions _envOptions;
+    private readonly AuthenticationOptions _authOptions;
 
     public AuthController(
         IPortalUserRepository users,
         IOptions<JwtOptions> jwtOptions,
-        EnvironmentOptions envOptions)
+        AuthenticationOptions authOptions)
     {
         _users = users;
         _jwt = new JwtTokenService(jwtOptions.Value);
-        _envOptions = envOptions;
+        _authOptions = authOptions;
     }
 
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
-        if (!string.Equals(_envOptions.Mode, "DevelopmentLocal", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(_authOptions.Provider, "Local", StringComparison.OrdinalIgnoreCase))
         {
-            return Forbid(); // Dev-local auth only; ProductionCloud will use Entra later
+            return Forbid(); // Local username/password is disabled when Entra provider is active.
         }
 
         var user = await _users.GetByLocalUsernameAsync(request.Username, ct);

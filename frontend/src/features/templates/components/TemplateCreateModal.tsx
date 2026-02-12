@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Save, Terminal } from 'lucide-react';
+import { X, Save, Terminal, RefreshCcw } from 'lucide-react';
 import type { TemplateType } from '../../types';
 import { cn } from '../../../lib/utils';
 

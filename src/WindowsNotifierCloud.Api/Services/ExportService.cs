@@ -122,17 +122,10 @@ public class ExportService
     private string? ResolveIconPath(string fileName, Guid moduleId)
     {
         var pathsToCheck = new List<string>();
-
-        // Current path
-        pathsToCheck.Add(Path.Combine(_storage.Root, "modules", "assets", moduleId.ToString(), fileName));
-        pathsToCheck.Add(Path.Combine(_storage.Root, "module-assets", moduleId.ToString(), fileName));
-
-        // Legacy path (pre ApiStorage rename)
-        if (_storage.Root.Contains("ApiStorage", StringComparison.OrdinalIgnoreCase))
+        foreach (var root in GetStorageRootCandidates())
         {
-            var legacyRoot = _storage.Root.Replace("ApiStorage", "Storage");
-            pathsToCheck.Add(Path.Combine(legacyRoot, "modules", "assets", moduleId.ToString(), fileName));
-            pathsToCheck.Add(Path.Combine(legacyRoot, "module-assets", moduleId.ToString(), fileName));
+            pathsToCheck.Add(Path.Combine(root, "modules", "assets", moduleId.ToString(), fileName));
+            pathsToCheck.Add(Path.Combine(root, "module-assets", moduleId.ToString(), fileName));
         }
 
         foreach (var p in pathsToCheck)
@@ -148,17 +141,11 @@ public class ExportService
 
     private string? ResolveHeroPath(Guid moduleId)
     {
-        var pathsToCheck = new List<string>
+        var pathsToCheck = new List<string>();
+        foreach (var root in GetStorageRootCandidates())
         {
-            Path.Combine(_storage.Root, "module-assets", moduleId.ToString(), "hero.png"),
-            Path.Combine(_storage.Root, "modules", "assets", moduleId.ToString(), "hero.png")
-        };
-
-        if (_storage.Root.Contains("ApiStorage", StringComparison.OrdinalIgnoreCase))
-        {
-            var legacyRoot = _storage.Root.Replace("ApiStorage", "Storage");
-            pathsToCheck.Add(Path.Combine(legacyRoot, "module-assets", moduleId.ToString(), "hero.png"));
-            pathsToCheck.Add(Path.Combine(legacyRoot, "modules", "assets", moduleId.ToString(), "hero.png"));
+            pathsToCheck.Add(Path.Combine(root, "module-assets", moduleId.ToString(), "hero.png"));
+            pathsToCheck.Add(Path.Combine(root, "modules", "assets", moduleId.ToString(), "hero.png"));
         }
 
         foreach (var p in pathsToCheck)
@@ -180,7 +167,36 @@ public class ExportService
         return safe;
     }
 
-private static void CopyDirectory(string sourceDir, string destDir, bool overwrite)
+    private IEnumerable<string> GetStorageRootCandidates()
+    {
+        var roots = new List<string>();
+        void AddIfValid(string? root)
+        {
+            if (string.IsNullOrWhiteSpace(root)) return;
+            if (!roots.Contains(root, StringComparer.OrdinalIgnoreCase))
+            {
+                roots.Add(root);
+            }
+        }
+
+        AddIfValid(_storage.Root);
+
+        if (!string.IsNullOrWhiteSpace(_storage.Root) &&
+            _storage.Root.Contains("ApiStorage", StringComparison.OrdinalIgnoreCase))
+        {
+            AddIfValid(_storage.Root.Replace("ApiStorage", "Storage", StringComparison.OrdinalIgnoreCase));
+        }
+
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        AddIfValid(Path.Combine(localAppData, "CloudNotifier", "ApiStorage"));
+        AddIfValid(Path.Combine(localAppData, "CloudNotifier", "Storage"));
+        AddIfValid(Path.Combine(localAppData, "Windows Notifier", "ApiStorage"));
+        AddIfValid(Path.Combine(localAppData, "Windows Notifier", "Storage"));
+
+        return roots;
+    }
+
+    private static void CopyDirectory(string sourceDir, string destDir, bool overwrite)
     {
         if (Directory.Exists(destDir) && overwrite)
         {

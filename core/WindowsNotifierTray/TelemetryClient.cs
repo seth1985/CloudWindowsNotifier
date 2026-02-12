@@ -27,6 +27,7 @@ internal sealed class TelemetryClient
     {
         if (string.IsNullOrWhiteSpace(_apiUrl) || string.IsNullOrWhiteSpace(_apiKey))
         {
+            Logger.Write("WARN", "Telemetry send skipped because URL or API key is missing.");
             return;
         }
 
@@ -54,6 +55,7 @@ internal sealed class TelemetryClient
             var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
+                Logger.Write("WARN", $"Telemetry send failed ({(int)response.StatusCode}) for event '{eventType}' module '{moduleId}'. Event queued.");
                 QueueManager.Enqueue(new TelemetryQueueItem
                 {
                     Id = Guid.NewGuid(),
@@ -65,6 +67,7 @@ internal sealed class TelemetryClient
         }
         catch
         {
+            Logger.Write("WARN", $"Telemetry send exception for event '{eventType}' module '{moduleId}'. Event queued.");
             QueueManager.Enqueue(new TelemetryQueueItem
             {
                 Id = Guid.NewGuid(),
@@ -86,6 +89,12 @@ internal sealed class TelemetryClient
                 request.Headers.Add("x-wn-api-key", _apiKey);
                 request.Content = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var evtType = item.Payload.TryGetValue("eventType", out var e) ? e?.ToString() : "unknown";
+                    var moduleId = item.Payload.TryGetValue("moduleId", out var m) ? m?.ToString() : "unknown";
+                    Logger.Write("WARN", $"Telemetry retry failed ({(int)response.StatusCode}) for event '{evtType}' module '{moduleId}'.");
+                }
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -113,13 +122,38 @@ internal sealed class TelemetryQueueItem
 internal static class QueueManager
 {
     private static readonly object Sync = new();
-    private static readonly string QueuePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "WindowsNotifier", "Telemetry", "pending.jsonl");
+    private static readonly string QueuePath = ResolveQueuePath();
 
     private const int MaxAttempts = 10;
     private static readonly TimeSpan MaxAge = TimeSpan.FromDays(7);
     private const long MaxFileBytes = 5 * 1024 * 1024; // 5 MB
+
+    private static string ResolveQueuePath()
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var preferred = Path.Combine(localAppData, "Windows Notifier", "Telemetry", "pending.jsonl");
+        var legacy = Path.Combine(localAppData, "WindowsNotifier", "Telemetry", "pending.jsonl");
+
+        try
+        {
+            var preferredDir = Path.GetDirectoryName(preferred);
+            if (!string.IsNullOrEmpty(preferredDir))
+            {
+                Directory.CreateDirectory(preferredDir);
+            }
+
+            if (!File.Exists(preferred) && File.Exists(legacy))
+            {
+                File.Copy(legacy, preferred, overwrite: false);
+            }
+        }
+        catch
+        {
+            // Best effort migration only.
+        }
+
+        return preferred;
+    }
 
     public static void Enqueue(TelemetryQueueItem item)
     {

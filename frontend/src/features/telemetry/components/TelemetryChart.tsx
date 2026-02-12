@@ -8,31 +8,37 @@ import {
     Tooltip,
     ResponsiveContainer
 } from 'recharts';
+import type { TelemetryPerModule } from '../../../types';
 
 type DataPoint = {
-    date: string;
+    label: string;
     shown: number;
     clicked: number;
 };
 
-// Mock data generator since we don't have real time-series API yet
-const generateMockData = (): DataPoint[] => {
-    const data: DataPoint[] = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        data.push({
-            date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            shown: Math.floor(Math.random() * 50) + 10,
-            clicked: Math.floor(Math.random() * 20) + 5,
-        });
-    }
-    return data;
+type Props = {
+    perModule: TelemetryPerModule[];
 };
 
-export const TelemetryChart: React.FC = () => {
-    const data = React.useMemo(() => generateMockData(), []);
+export const TelemetryChart: React.FC<Props> = ({ perModule }) => {
+    const data = React.useMemo<DataPoint[]>(() => {
+        return [...perModule]
+            .sort((a, b) => (b.toastShown ?? 0) - (a.toastShown ?? 0))
+            .slice(0, 7)
+            .map((m) => ({
+                label: m.displayName || m.moduleId,
+                shown: m.toastShown ?? 0,
+                clicked: (m.buttonOk ?? 0) + (m.buttonMoreInfo ?? 0),
+            }));
+    }, [perModule]);
+
+    if (data.length === 0) {
+        return (
+            <div className="w-full h-[300px] mt-4 flex items-center justify-center text-text-tertiary text-sm">
+                No telemetry points to chart yet.
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-[300px] mt-4">
@@ -49,7 +55,7 @@ export const TelemetryChart: React.FC = () => {
                         </linearGradient>
                     </defs>
                     <XAxis
-                        dataKey="date"
+                        dataKey="label"
                         stroke="var(--text-tertiary)"
                         fontSize={12}
                         tickLine={false}

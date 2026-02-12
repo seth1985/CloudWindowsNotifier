@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System.Text.Json;
 using System.Collections.Generic;
+using System.Linq;
 using Windows.UI.Notifications;
 
 namespace WindowsNotifierTray;
@@ -36,10 +37,15 @@ public class TrayForm : Form
 
     private string InstallRoot => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "CloudNotifier",
+        "Windows Notifier",
         "Core");
 
     private static string ModulesRootDefault => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Windows Notifier",
+        "Modules");
+
+    private static string ModulesRootLegacy => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "CloudNotifier",
         "Modules");
@@ -193,6 +199,10 @@ public class TrayForm : Form
 
     private void RunScan()
     {
+        NotificationSettingsGuard.EnsureEnabled();
+        ModuleStateStore.EnsureCompatibility();
+        EnsureModulesCompatibility();
+
         _settings = CoreSettingsStore.GetSettings();
         _pollingIntervalSeconds = _settings.TryGetValue("PollingInterval", out var poll) ? poll : 60;
         var autoClearSetting = _settings.TryGetValue("AutoClearModules", out var acSetting) ? acSetting : 1;
@@ -203,7 +213,6 @@ public class TrayForm : Form
         if (!Directory.Exists(modulesRoot))
         {
             Directory.CreateDirectory(modulesRoot);
-            return;
         }
 
         var now = DateTime.UtcNow;
@@ -236,8 +245,22 @@ public class TrayForm : Form
             if (string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(status, "Expired", StringComparison.OrdinalIgnoreCase))
             {
+                if (IsManifestRedeployed(manifestPath, state))
+                {
+                    Logger.Write("INFO", $"Detected redeploy for '{manifest.id}'. Resetting state from '{status}' to 'Pending'.");
+                    state = new ModuleState
+                    {
+                        Status = "Pending",
+                        UserDismissed = 0,
+                        LastError = null
+                    };
+                    ModuleStateStore.SetState(manifest.id, state);
+                }
+                else
+                {
                 Logger.Write("DEBUG", $"Skipping '{manifest.id}' due to status '{status}'.");
                 continue;
+                }
             }
 
             // Core settings modules: apply and clear
@@ -848,27 +871,61 @@ public class TrayForm : Form
         return null;
     }
 
+    private static bool IsManifestRedeployed(string manifestPath, ModuleState? state)
+    {
+        try
+        {
+            if (!File.Exists(manifestPath))
+            {
+                return false;
+            }
+
+            var marker = state?.AcknowledgedAt ?? ParseDate(state?.LastShownAt);
+            if (!marker.HasValue)
+            {
+                return false;
+            }
+
+            var manifestWriteUtc = File.GetLastWriteTimeUtc(manifestPath);
+            return manifestWriteUtc > marker.Value.AddSeconds(1);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static TelemetryClient CreateTelemetryClient()
     {
         // Priority: env vars > config file > local dev defaults.
         var url = Environment.GetEnvironmentVariable("WN_TELEMETRY_URL") ?? string.Empty;
         var key = Environment.GetEnvironmentVariable("WN_TELEMETRY_KEY") ?? string.Empty;
+        var source = "environment";
 
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(key))
         {
             // Registry fallback (Core settings can set these via deployment)
             try
             {
-                using var reg = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\CloudNotifier\Core");
+                using var reg = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\WindowsNotifier\Core")
+                    ?? Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\CloudNotifier\Core");
                 if (reg != null)
                 {
                     if (string.IsNullOrWhiteSpace(url))
                     {
                         url = reg.GetValue("TelemetryUrl") as string ?? url;
+                        if (!string.IsNullOrWhiteSpace(url))
+                        {
+                            source = "registry";
+                        }
                     }
                     if (string.IsNullOrWhiteSpace(key))
                     {
                         key = reg.GetValue("TelemetryKey") as string ?? key;
+                        if (!string.IsNullOrWhiteSpace(key))
+                        {
+                            source = "registry";
+                        }
                     }
                 }
             }
@@ -879,18 +936,33 @@ public class TrayForm : Form
         {
             try
             {
-                var cfgPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CloudNotifier", "tray.config.json");
-                if (File.Exists(cfgPath))
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var cfgCandidates = new[]
+                {
+                    Path.Combine(localAppData, "Windows Notifier", "tray.config.json"),
+                    Path.Combine(localAppData, "CloudNotifier", "tray.config.json")
+                };
+
+                var cfgPath = cfgCandidates.FirstOrDefault(File.Exists);
+                if (!string.IsNullOrWhiteSpace(cfgPath))
                 {
                     var json = File.ReadAllText(cfgPath);
                     using var doc = JsonDocument.Parse(json);
                     if (string.IsNullOrWhiteSpace(url) && doc.RootElement.TryGetProperty("telemetryUrl", out var urlProp))
                     {
                         url = urlProp.GetString() ?? url;
+                        if (!string.IsNullOrWhiteSpace(url))
+                        {
+                            source = "tray.config.json";
+                        }
                     }
                     if (string.IsNullOrWhiteSpace(key) && doc.RootElement.TryGetProperty("telemetryKey", out var keyProp))
                     {
                         key = keyProp.GetString() ?? key;
+                        if (!string.IsNullOrWhiteSpace(key))
+                        {
+                            source = "tray.config.json";
+                        }
                     }
                 }
             }
@@ -903,6 +975,7 @@ public class TrayForm : Form
         if (string.IsNullOrWhiteSpace(url))
         {
             url = "http://localhost:5210/api/telemetry/events";
+            source = "default";
         }
 
         if (string.IsNullOrWhiteSpace(key))
@@ -916,6 +989,62 @@ public class TrayForm : Form
             return new TelemetryClient(string.Empty, string.Empty);
         }
 
+        Logger.Write("INFO", $"Telemetry configured from {source}. URL='{url}'.");
+
         return new TelemetryClient(url, key);
+    }
+
+    private static void EnsureModulesCompatibility()
+    {
+        try
+        {
+            if (!Directory.Exists(ModulesRootDefault))
+            {
+                Directory.CreateDirectory(ModulesRootDefault);
+            }
+
+            if (!Directory.Exists(ModulesRootLegacy))
+            {
+                return;
+            }
+
+            foreach (var legacyDir in Directory.GetDirectories(ModulesRootLegacy))
+            {
+                var moduleName = Path.GetFileName(legacyDir);
+                if (string.IsNullOrWhiteSpace(moduleName))
+                {
+                    continue;
+                }
+
+                var preferredDir = Path.Combine(ModulesRootDefault, moduleName);
+                if (Directory.Exists(preferredDir))
+                {
+                    continue;
+                }
+
+                CopyDirectory(legacyDir, preferredDir);
+                Logger.Write("INFO", $"Migrated legacy module folder '{moduleName}' to '{ModulesRootDefault}'.");
+            }
+        }
+        catch
+        {
+            // best effort
+        }
+    }
+
+    private static void CopyDirectory(string sourceDir, string destinationDir)
+    {
+        Directory.CreateDirectory(destinationDir);
+        foreach (var file in Directory.GetFiles(sourceDir))
+        {
+            var destinationFile = Path.Combine(destinationDir, Path.GetFileName(file));
+            File.Copy(file, destinationFile, overwrite: true);
+        }
+
+        foreach (var directory in Directory.GetDirectories(sourceDir))
+        {
+            var destinationSubDir = Path.Combine(destinationDir, Path.GetFileName(directory));
+            CopyDirectory(directory, destinationSubDir);
+        }
     }
 }

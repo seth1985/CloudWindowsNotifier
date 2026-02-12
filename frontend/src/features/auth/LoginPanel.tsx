@@ -2,6 +2,7 @@ import React from 'react';
 import { Shield, Globe, Lock, User, Terminal } from 'lucide-react';
 
 type Props = {
+  authProvider: 'Local' | 'Entra';
   apiBase: string;
   setApiBase: (v: string) => void;
   username: string;
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export const LoginPanel: React.FC<Props> = ({
+  authProvider,
   apiBase,
   setApiBase,
   username,
@@ -26,7 +28,6 @@ export const LoginPanel: React.FC<Props> = ({
 }) => {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0e1a2d]">
-      {/* Animated Background Blobs */}
       <div className="absolute top-0 -left-4 w-72 h-72 bg-primary-main mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-purple-500 mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
@@ -56,34 +57,38 @@ export const LoginPanel: React.FC<Props> = ({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-tertiary ml-1 flex items-center gap-2">
-                <User className="w-3.5 h-3.5" /> Username
-              </label>
-              <div className="relative group">
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:ring-2 focus:ring-primary-main focus:border-transparent outline-none transition-all"
-                  placeholder="admin"
-                />
-              </div>
-            </div>
+            {authProvider === 'Local' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-tertiary ml-1 flex items-center gap-2">
+                    <User className="w-3.5 h-3.5" /> Username
+                  </label>
+                  <div className="relative group">
+                    <input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:ring-2 focus:ring-primary-main focus:border-transparent outline-none transition-all"
+                      placeholder="admin"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-tertiary ml-1 flex items-center gap-2">
-                <Lock className="w-3.5 h-3.5" /> Password
-              </label>
-              <div className="relative group">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:ring-2 focus:ring-primary-main focus:border-transparent outline-none transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-tertiary ml-1 flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5" /> Password
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:ring-2 focus:ring-primary-main focus:border-transparent outline-none transition-all"
+                      placeholder="********"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <button
               onClick={onLogin}
@@ -95,7 +100,7 @@ export const LoginPanel: React.FC<Props> = ({
               ) : (
                 <>
                   <Terminal className="w-5 h-5" />
-                  <span>Authenticate Session</span>
+                  <span>{authProvider === 'Entra' ? 'Sign In with Microsoft' : 'Authenticate Session'}</span>
                 </>
               )}
             </button>

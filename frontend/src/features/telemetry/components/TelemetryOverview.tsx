@@ -111,7 +111,7 @@ export const TelemetryOverview: React.FC<Props> = ({ summary, perModule, loading
                   </div>
                 </div>
               </div>
-              <TelemetryChart />
+              <TelemetryChart perModule={perModule} />
             </div>
 
             {/* Range Info Case */}

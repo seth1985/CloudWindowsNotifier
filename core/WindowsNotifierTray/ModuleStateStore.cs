@@ -19,13 +19,49 @@ public sealed class ModuleState
 
 internal static class ModuleStateStore
 {
-    private const string RootKey = @"Software\CloudNotifier\Modules";
+    private const string PrimaryRootKey = @"Software\WindowsNotifier\Modules";
+    private const string LegacyRootKey = @"Software\CloudNotifier\Modules";
+    private static bool _migrationDone;
+
+    public static void EnsureCompatibility()
+    {
+        if (_migrationDone) return;
+        _migrationDone = true;
+
+        try
+        {
+            using var legacyRoot = Registry.CurrentUser.OpenSubKey(LegacyRootKey);
+            if (legacyRoot == null) return;
+
+            foreach (var moduleId in legacyRoot.GetSubKeyNames())
+            {
+                using var legacyModule = legacyRoot.OpenSubKey(moduleId);
+                using var primaryModule = Registry.CurrentUser.CreateSubKey($@"{PrimaryRootKey}\{moduleId}");
+                if (legacyModule == null || primaryModule == null) continue;
+
+                foreach (var valueName in legacyModule.GetValueNames())
+                {
+                    var value = legacyModule.GetValue(valueName);
+                    var kind = legacyModule.GetValueKind(valueName);
+                    if (value != null)
+                    {
+                        primaryModule.SetValue(valueName, value, kind);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // best effort
+        }
+    }
 
     public static ModuleState? GetState(string moduleId)
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey($@"{RootKey}\{moduleId}");
+            using var key = Registry.CurrentUser.OpenSubKey($@"{PrimaryRootKey}\{moduleId}")
+                ?? Registry.CurrentUser.OpenSubKey($@"{LegacyRootKey}\{moduleId}");
             if (key == null) return null;
 
             var status = key.GetValue("Status") as string ?? "Pending";
@@ -68,85 +104,91 @@ internal static class ModuleStateStore
     {
         try
         {
-            using var key = Registry.CurrentUser.CreateSubKey($@"{RootKey}\{moduleId}");
-            key.SetValue("Status", state.Status);
-            key.SetValue("UserDismissed", state.UserDismissed);
-
-            if (state.AcknowledgedAt.HasValue)
-            {
-                key.SetValue("AcknowledgedAt", state.AcknowledgedAt.Value.ToString("o"));
-            }
-            else
-            {
-                try { key.DeleteValue("AcknowledgedAt", false); } catch { }
-            }
-
-            if (!string.IsNullOrEmpty(state.LastError))
-            {
-                key.SetValue("LastError", state.LastError);
-            }
-            else
-            {
-                try { key.DeleteValue("LastError", false); } catch { }
-            }
-
-            if (!string.IsNullOrEmpty(state.LastShownAt))
-            {
-                key.SetValue("LastShownAt", state.LastShownAt);
-            }
-            else
-            {
-                try { key.DeleteValue("LastShownAt", false); } catch { }
-            }
-
-            if (!string.IsNullOrEmpty(state.ScheduledAt))
-            {
-                key.SetValue("ScheduledAt", state.ScheduledAt);
-            }
-            else
-            {
-                try { key.DeleteValue("ScheduledAt", false); } catch { }
-            }
-
-            if (!string.IsNullOrEmpty(state.ReminderDueAt))
-            {
-                key.SetValue("ReminderDueAt", state.ReminderDueAt);
-            }
-            else
-            {
-                try { key.DeleteValue("ReminderDueAt", false); } catch { }
-            }
-
-            if (!string.IsNullOrEmpty(state.ReminderHours))
-            {
-                key.SetValue("ReminderHours", state.ReminderHours);
-            }
-            else
-            {
-                try { key.DeleteValue("ReminderHours", false); } catch { }
-            }
-
-            if (!string.IsNullOrEmpty(state.LastConditionCheckAt))
-            {
-                key.SetValue("LastConditionCheckAt", state.LastConditionCheckAt);
-            }
-            else
-            {
-                try { key.DeleteValue("LastConditionCheckAt", false); } catch { }
-            }
-
-            if (!string.IsNullOrEmpty(state.NextConditionCheckAt))
-            {
-                key.SetValue("NextConditionCheckAt", state.NextConditionCheckAt);
-            }
-            else
-            {
-                try { key.DeleteValue("NextConditionCheckAt", false); } catch { }
-            }
+            WriteState(PrimaryRootKey, moduleId, state);
+            WriteState(LegacyRootKey, moduleId, state);
         }
         catch
         {
             // ignore
+        }
+    }
+
+    private static void WriteState(string rootKey, string moduleId, ModuleState state)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey($@"{rootKey}\{moduleId}");
+        key!.SetValue("Status", state.Status);
+        key.SetValue("UserDismissed", state.UserDismissed);
+
+        if (state.AcknowledgedAt.HasValue)
+        {
+            key.SetValue("AcknowledgedAt", state.AcknowledgedAt.Value.ToString("o"));
+        }
+        else
+        {
+            try { key.DeleteValue("AcknowledgedAt", false); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(state.LastError))
+        {
+            key.SetValue("LastError", state.LastError);
+        }
+        else
+        {
+            try { key.DeleteValue("LastError", false); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(state.LastShownAt))
+        {
+            key.SetValue("LastShownAt", state.LastShownAt);
+        }
+        else
+        {
+            try { key.DeleteValue("LastShownAt", false); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(state.ScheduledAt))
+        {
+            key.SetValue("ScheduledAt", state.ScheduledAt);
+        }
+        else
+        {
+            try { key.DeleteValue("ScheduledAt", false); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(state.ReminderDueAt))
+        {
+            key.SetValue("ReminderDueAt", state.ReminderDueAt);
+        }
+        else
+        {
+            try { key.DeleteValue("ReminderDueAt", false); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(state.ReminderHours))
+        {
+            key.SetValue("ReminderHours", state.ReminderHours);
+        }
+        else
+        {
+            try { key.DeleteValue("ReminderHours", false); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(state.LastConditionCheckAt))
+        {
+            key.SetValue("LastConditionCheckAt", state.LastConditionCheckAt);
+        }
+        else
+        {
+            try { key.DeleteValue("LastConditionCheckAt", false); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(state.NextConditionCheckAt))
+        {
+            key.SetValue("NextConditionCheckAt", state.NextConditionCheckAt);
+        }
+        else
+        {
+            try { key.DeleteValue("NextConditionCheckAt", false); } catch { }
         }
     }
 }

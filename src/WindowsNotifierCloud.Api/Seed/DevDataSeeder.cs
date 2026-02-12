@@ -21,7 +21,7 @@ public sealed class DevDataSeeder
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        await _db.Database.EnsureCreatedAsync(cancellationToken);
+        await _db.Database.MigrateAsync(cancellationToken);
 
         var anyUsers = await _db.PortalUsers.AnyAsync(cancellationToken);
         if (anyUsers)
