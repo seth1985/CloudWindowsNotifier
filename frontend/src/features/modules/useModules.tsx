@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CoreSettingsBlock, ModuleRow, NotificationType } from '../../types';
-import { getModules, createModule, UpsertModuleRequest, uploadIcon, uploadHero, exportDevCore, getIconUrl, getHeroUrl } from './api';
+import { getModules, createModule, UpsertModuleRequest, uploadIcon, uploadHero, exportDevCore, getIconUrl, getHeroUrl, getIntuneGroups, deployToIntuneGroup, IntuneGroup } from './api';
 import { generateModuleId } from '../../core/utils/generateModuleId';
 
 export function useModules(apiBase: string, token: string | null, setGlobalStatus: (s: string) => void, isAdvanced: boolean) {
@@ -14,6 +14,8 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
   const [iconPreviewUrl, setIconPreviewUrl] = useState<string | null>(null);
   const [heroPreviewUrl, setHeroPreviewUrl] = useState<string | null>(null);
   const [localHeroPreview, setLocalHeroPreview] = useState<string | null>(null);
+  const [intuneGroups, setIntuneGroups] = useState<IntuneGroup[]>([]);
+  const [loadingIntuneGroups, setLoadingIntuneGroups] = useState(false);
 
   const loadModules = async (silent = false) => {
     if (!token) {
@@ -339,6 +341,40 @@ export function useModules(apiBase: string, token: string | null, setGlobalStatu
       } finally {
         setRemoving(false);
       }
+    },
+    loadIntuneGroups: async () => {
+      if (!token) return setGlobalStatus('Login first.');
+      try {
+        setLoadingIntuneGroups(true);
+        setGlobalStatus('Loading Intune groups...');
+        const groups = await getIntuneGroups(apiBase, token);
+        setIntuneGroups(groups);
+        setGlobalStatus(groups.length > 0
+          ? `Loaded ${groups.length} Intune groups (${groups[0]?.displayName ? `${groups[0].displayName.split('-')[0]}-*` : 'WN-*'}).`
+          : 'No Intune groups found with configured prefix.');
+      } catch (err: any) {
+        setGlobalStatus(err?.message ?? 'Failed to load Intune groups.');
+      } finally {
+        setLoadingIntuneGroups(false);
+      }
+    },
+    deploySelectedToIntuneGroup: async (groupId: string) => {
+      if (!token) return setGlobalStatus('Login first.');
+      if (!selectedModuleId) return setGlobalStatus('Select exactly one module to publish.');
+      if (!groupId) return setGlobalStatus('Select an Intune group.');
+      try {
+        setLoading(true);
+        setGlobalStatus('Packaging and deploying to Intune...');
+        await deployToIntuneGroup(apiBase, token, selectedModuleId, groupId);
+        setGlobalStatus('Module packaged and assigned in Intune.');
+      } catch (err: any) {
+        setGlobalStatus(err?.message ?? 'Intune deployment failed.');
+      } finally {
+        setLoading(false);
+      }
     }
+    ,
+    intuneGroups,
+    loadingIntuneGroups
   };
 }

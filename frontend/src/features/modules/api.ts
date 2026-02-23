@@ -63,3 +63,16 @@ export async function exportDevCore(apiBase: string, token: string, moduleId: st
 export async function exportZip(apiBase: string, token: string, moduleId: string) {
   return apiPostJson<null, any>(`${apiBase}/api/export/${moduleId}/package`, token, null as any);
 }
+
+export type IntuneGroup = {
+  id: string;
+  displayName: string;
+};
+
+export async function getIntuneGroups(apiBase: string, token: string): Promise<IntuneGroup[]> {
+  return apiGet<IntuneGroup[]>(`${apiBase}/api/intune/groups`, token);
+}
+
+export async function deployToIntuneGroup(apiBase: string, token: string, moduleId: string, groupId: string) {
+  return apiPostJson<{ groupId: string }, any>(`${apiBase}/api/intune/deploy/${moduleId}`, token, { groupId });
+}

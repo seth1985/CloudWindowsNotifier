@@ -1,0 +1,470 @@
+﻿<Window x:Class="WindowsNotifier.OfflineAuthoring.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:WindowsNotifier.OfflineAuthoring.App.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Closing="Window_Closing"
+        Loaded="Window_Loaded"
+        Deactivated="Window_Deactivated"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        Title="Windows Notifier - Offline Authoring Tool"
+        Height="900"
+        Width="1320"
+        MinHeight="760"
+        MinWidth="1100"
+        Background="#F2F6FB"
+        FontFamily="Segoe UI">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+
+        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#D8E3F2" />
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#1F6FEB" />
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#1958BB" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#5D6B82" />
+        <SolidColorBrush x:Key="LabelBrush" Color="#27364E" />
+        <SolidColorBrush x:Key="ErrorBrush" Color="#C62828" />
+
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Color="#120E1F3E" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource PrimaryHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Foreground" Value="#23324A" />
+            <Setter Property="Background" Value="#EDF2FA" />
+            <Setter Property="BorderBrush" Value="#CAD8EC" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#E3ECFA" />
+                                <Setter Property="BorderBrush" Value="#B8CAE4" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource LabelBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,8,0,4" />
+        </Style>
+
+        <Style x:Key="ErrorTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+            <Setter Property="Margin" Value="0,4,0,8" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="InputTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#BCCDE6" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style x:Key="InputComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#BCCDE6" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TextBlock FontSize="28" FontWeight="Bold" Foreground="#102441" Text="Projects" />
+                <TextBlock Margin="0,34,0,0" Foreground="{StaticResource MutedTextBrush}" Text="Local project files (.wnproj)" />
+
+                <WrapPanel Grid.Row="1" Margin="0,18,0,12" ItemHeight="36">
+                    <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="NewProject_Click">New</Button>
+                    <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="OpenProject_Click">Open</Button>
+                    <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="ImportFolder_Click">Import Folder</Button>
+                    <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="LoadSelected_Click">Load Selected</Button>
+                    <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="RefreshProjects_Click">Refresh</Button>
+                </WrapPanel>
+
+                <ListBox Grid.Row="2"
+                         BorderBrush="#C9D7EA"
+                         BorderThickness="1"
+                         Background="#FAFCFF"
+                         ItemsSource="{Binding ProjectFiles}"
+                         SelectedItem="{Binding SelectedProjectFile, Mode=TwoWay}" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top">
+                    <TextBlock FontSize="34" FontWeight="Bold" Foreground="#102441" Text="Module Editor" />
+                    <Border Margin="0,10,0,0" Padding="10,7" Background="#EEF4FD" BorderBrush="#D3E1F5" BorderThickness="1" CornerRadius="8">
+                        <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="{Binding CurrentProjectPath, FallbackValue=No file selected}" />
+                    </Border>
+
+                    <WrapPanel Margin="0,14,0,14" ItemHeight="38">
+                        <Button Margin="0,0,8,8" Style="{StaticResource PrimaryButtonStyle}" Click="SaveProject_Click">Save</Button>
+                        <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="SaveAsProject_Click">Save As</Button>
+                        <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="Validate_Click">Validate</Button>
+                    </WrapPanel>
+                </StackPanel>
+
+                <Border DockPanel.Dock="Bottom" Margin="0,14,0,0" Padding="12" Background="#F2F7FF" BorderBrush="#CFE0F8" BorderThickness="1" CornerRadius="10">
+                    <StackPanel>
+                        <TextBlock FontSize="16" FontWeight="Bold" Foreground="#14325F" Text="Output Paths" />
+                        <TextBlock Margin="0,8,0,0" TextTrimming="CharacterEllipsis">
+                            <Run Text="Export: " FontWeight="SemiBold" />
+                            <Run Text="{Binding ExportRootFolder, Mode=OneWay}" />
+                            <Run Text="  |  Deploy: " FontWeight="SemiBold" />
+                            <Run Text="{Binding DeployRootFolder, Mode=OneWay}" />
+                            <Run Text="  |  Intune: " FontWeight="SemiBold" />
+                            <Run Text="{Binding IntunePackageRootFolder, Mode=OneWay}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <Border DockPanel.Dock="Bottom" Margin="0,14,0,0" Padding="12" Background="#F7FAFF" BorderBrush="#D7E3F5" BorderThickness="1" CornerRadius="10">
+                    <StackPanel>
+                        <TextBlock TextTrimming="CharacterEllipsis">
+                            <Run Text="Status: " FontWeight="SemiBold" Foreground="#14325F" />
+                            <Run Text="{Binding StatusMessage, Mode=OneWay}" />
+                        </TextBlock>
+                        <TextBlock Margin="0,6,0,0" TextTrimming="CharacterEllipsis">
+                            <Run Text="Validation: " FontWeight="SemiBold" Foreground="#14325F" />
+                            <Run Text="{Binding LastValidationSummary, Mode=OneWay}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Module ID" />
+                            <TextBox Style="{StaticResource InputTextBoxStyle}"
+                                     IsReadOnly="True"
+                                     Background="#F3F7FE"
+                                     Text="{Binding ModuleId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ModuleIdError}" Visibility="{Binding ModuleIdError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Type" />
+                            <ComboBox Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding ModuleTypes}" SelectedItem="{Binding SelectedType, Mode=TwoWay}" />
+
+                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Category" />
+                            <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Title" />
+                            <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding TitleError}" Visibility="{Binding TitleError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                            <StackPanel Visibility="{Binding IsMessageVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Message" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Height="110" MaxLength="160" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding Message, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,4,0,0" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Text="{Binding MessageCharacterCount}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding MessageError}" Visibility="{Binding MessageError, Converter={StaticResource StringToVisibilityConverter}}" />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsLinkLeftColumn, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Link URL and Reminder" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="104" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Width="360" HorizontalAlignment="Left" Style="{StaticResource InputTextBoxStyle}" Text="{Binding LinkUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <DockPanel Grid.Column="2" LastChildFill="False">
+                                        <TextBox Width="70" Height="32" Style="{StaticResource InputTextBoxStyle}" TextAlignment="Center" Text="{Binding ReminderHours, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <StackPanel Margin="6,0,0,0">
+                                            <Button Width="24" Height="20" FontSize="10" Style="{StaticResource SecondaryButtonStyle}" Click="ReminderUp_Click">^</Button>
+                                            <Button Width="24" Height="20" Margin="0,4,0,0" FontSize="10" Style="{StaticResource SecondaryButtonStyle}" Click="ReminderDown_Click">v</Button>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Grid>
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding LinkUrlError}" Visibility="{Binding LinkUrlError, Converter={StaticResource StringToVisibilityConverter}}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ReminderHoursError}" Visibility="{Binding ReminderHoursError, Converter={StaticResource StringToVisibilityConverter}}" />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsScheduleLeftColumn, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Margin="0,8,0,4" FontSize="20" FontWeight="Bold" Foreground="#14325F" Text="Schedule" />
+                                <Grid Margin="0,4,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <CheckBox Margin="0,0,0,4" IsChecked="{Binding ScheduleEnabled, Mode=TwoWay}" Content="Enable scheduled start" />
+                                        <DockPanel LastChildFill="False">
+                                            <DatePicker Width="130" SelectedDate="{Binding ScheduleLocalDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <ComboBox Width="54" Margin="6,0,0,0" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeHours}" SelectedItem="{Binding ScheduleHour, Mode=TwoWay}" />
+                                            <TextBlock Margin="4,6,4,0" VerticalAlignment="Top" Text=":" />
+                                            <ComboBox Width="54" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeMinutes}" SelectedItem="{Binding ScheduleMinute, Mode=TwoWay}" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ScheduleUtcError}" Visibility="{Binding ScheduleUtcError, Converter={StaticResource StringToVisibilityConverter}}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <CheckBox Margin="0,0,0,4" IsChecked="{Binding ExpiresEnabled, Mode=TwoWay}" Content="Enable expiry time" />
+                                        <DockPanel LastChildFill="False">
+                                            <DatePicker Width="130" SelectedDate="{Binding ExpiresLocalDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <ComboBox Width="54" Margin="6,0,0,0" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeHours}" SelectedItem="{Binding ExpiresHour, Mode=TwoWay}" />
+                                            <TextBlock Margin="4,6,4,0" VerticalAlignment="Top" Text=":" />
+                                            <ComboBox Width="54" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeMinutes}" SelectedItem="{Binding ExpiresMinute, Mode=TwoWay}" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ExpiresUtcError}" Visibility="{Binding ExpiresUtcError, Converter={StaticResource StringToVisibilityConverter}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsIconLeftColumn, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Icon Source Path" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="BrowseIcon_Click">Browse</Button>
+                                    <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding IconSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </DockPanel>
+                                <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Text="Icon file copied during export/deploy. Optional for non-hero modules." />
+                                <Border Width="74" Height="74" Margin="0,6,0,2" HorizontalAlignment="Left" BorderBrush="#CAD8EC" BorderThickness="1" CornerRadius="6" Background="#F7FAFF">
+                                    <Image Source="{Binding IconSourcePath}" Stretch="Uniform" />
+                                </Border>
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding IconSourcePathError}" Visibility="{Binding IconSourcePathError, Converter={StaticResource StringToVisibilityConverter}}" />
+                            </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                            <StackPanel Visibility="{Binding IsLinkRightColumn, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Link URL and Reminder" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="104" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Width="360" HorizontalAlignment="Left" Style="{StaticResource InputTextBoxStyle}" Text="{Binding LinkUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <DockPanel Grid.Column="2" LastChildFill="False">
+                                        <TextBox Width="70" Height="32" Style="{StaticResource InputTextBoxStyle}" TextAlignment="Center" Text="{Binding ReminderHours, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <StackPanel Margin="6,0,0,0">
+                                            <Button Width="24" Height="20" FontSize="10" Style="{StaticResource SecondaryButtonStyle}" Click="ReminderUp_Click">^</Button>
+                                            <Button Width="24" Height="20" Margin="0,4,0,0" FontSize="10" Style="{StaticResource SecondaryButtonStyle}" Click="ReminderDown_Click">v</Button>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Grid>
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding LinkUrlError}" Visibility="{Binding LinkUrlError, Converter={StaticResource StringToVisibilityConverter}}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ReminderHoursError}" Visibility="{Binding ReminderHoursError, Converter={StaticResource StringToVisibilityConverter}}" />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsScheduleRightColumn, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Margin="0,8,0,4" FontSize="20" FontWeight="Bold" Foreground="#14325F" Text="Schedule" />
+                                <Grid Margin="0,4,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <CheckBox Margin="0,0,0,4" IsChecked="{Binding ScheduleEnabled, Mode=TwoWay}" Content="Enable scheduled start" />
+                                        <DockPanel LastChildFill="False">
+                                            <DatePicker Width="130" SelectedDate="{Binding ScheduleLocalDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <ComboBox Width="54" Margin="6,0,0,0" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeHours}" SelectedItem="{Binding ScheduleHour, Mode=TwoWay}" />
+                                            <TextBlock Margin="4,6,4,0" VerticalAlignment="Top" Text=":" />
+                                            <ComboBox Width="54" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeMinutes}" SelectedItem="{Binding ScheduleMinute, Mode=TwoWay}" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ScheduleUtcError}" Visibility="{Binding ScheduleUtcError, Converter={StaticResource StringToVisibilityConverter}}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <CheckBox Margin="0,0,0,4" IsChecked="{Binding ExpiresEnabled, Mode=TwoWay}" Content="Enable expiry time" />
+                                        <DockPanel LastChildFill="False">
+                                            <DatePicker Width="130" SelectedDate="{Binding ExpiresLocalDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <ComboBox Width="54" Margin="6,0,0,0" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeHours}" SelectedItem="{Binding ExpiresHour, Mode=TwoWay}" />
+                                            <TextBlock Margin="4,6,4,0" VerticalAlignment="Top" Text=":" />
+                                            <ComboBox Width="54" Style="{StaticResource InputComboBoxStyle}" ItemsSource="{Binding TimeMinutes}" SelectedItem="{Binding ExpiresMinute, Mode=TwoWay}" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ExpiresUtcError}" Visibility="{Binding ExpiresUtcError, Converter={StaticResource StringToVisibilityConverter}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsIconRightColumn, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Icon Source Path" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="BrowseIcon_Click">Browse</Button>
+                                    <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding IconSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </DockPanel>
+                                <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Text="Icon file copied during export/deploy. Optional for non-hero modules." />
+                                <Border Width="74" Height="74" Margin="0,6,0,2" HorizontalAlignment="Left" BorderBrush="#CAD8EC" BorderThickness="1" CornerRadius="6" Background="#F7FAFF">
+                                    <Image Source="{Binding IconSourcePath}" Stretch="Uniform" />
+                                </Border>
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding IconSourcePathError}" Visibility="{Binding IconSourcePathError, Converter={StaticResource StringToVisibilityConverter}}" />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsHeroVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Hero Source Path" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="BrowseHero_Click">Browse</Button>
+                                    <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding HeroSourcePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </DockPanel>
+                                <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Text="Required for Hero modules." />
+                                <Border Width="90" Height="60" Margin="0,6,0,2" BorderBrush="#CAD8EC" BorderThickness="1" CornerRadius="6" Background="#F7FAFF">
+                                    <Image Source="{Binding HeroSourcePath}" Stretch="UniformToFill" />
+                                </Border>
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding HeroSourcePathError}" Visibility="{Binding HeroSourcePathError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Hero File Name" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding HeroFileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding IsConditionalVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Conditional Interval Minutes" />
+                                <TextBox Width="70" Height="32" Style="{StaticResource InputTextBoxStyle}" TextAlignment="Center" Text="{Binding ConditionalIntervalMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ConditionalIntervalMinutesError}" Visibility="{Binding ConditionalIntervalMinutesError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Conditional Script Body" />
+                                <DockPanel Margin="0,0,0,8">
+                                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="OpenConditionalEditor_Click">Open Editor</Button>
+                                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="LoadConditionalScript_Click">Load .ps1 File</Button>
+                                </DockPanel>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Height="170" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding ConditionalScriptBody, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding ConditionalScriptBodyError}" Visibility="{Binding ConditionalScriptBodyError, Converter={StaticResource StringToVisibilityConverter}}" />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsDynamicVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Dynamic Script Body" />
+                                <DockPanel Margin="0,0,0,8">
+                                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="OpenDynamicEditor_Click">Open Editor</Button>
+                                    <Button DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource SecondaryButtonStyle}" Click="LoadDynamicScript_Click">Load .ps1 File</Button>
+                                </DockPanel>
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Height="170" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding DynamicScriptBody, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding DynamicScriptBodyError}" Visibility="{Binding DynamicScriptBodyError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Dynamic Max Length" />
+                                <TextBox Width="70" Height="32" Style="{StaticResource InputTextBoxStyle}" TextAlignment="Center" Text="{Binding DynamicMaxLength, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding DynamicMaxLengthError}" Visibility="{Binding DynamicMaxLengthError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <CheckBox Margin="0,8,0,4" IsChecked="{Binding DynamicTrimWhitespace, Mode=TwoWay}" Content="Dynamic Trim Whitespace" />
+                                <CheckBox Margin="0,0,0,8" IsChecked="{Binding DynamicFailIfEmpty, Mode=TwoWay}" Content="Dynamic Fail If Empty" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Dynamic Fallback Message" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Height="90" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding DynamicFallbackMessage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsCoreSettingsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Margin="0,8,0,4" FontSize="20" FontWeight="Bold" Foreground="#14325F" Text="Core Settings" />
+                                <CheckBox Margin="0,4,0,6" IsChecked="{Binding CoreEnabled, Mode=TwoWay}" Content="Core Enabled" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding CoreEnabledError}" Visibility="{Binding CoreEnabledError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Polling Interval Seconds" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding CorePollingIntervalSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding CorePollingIntervalSecondsError}" Visibility="{Binding CorePollingIntervalSecondsError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Heartbeat Seconds" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding CoreHeartbeatSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding CoreHeartbeatSecondsError}" Visibility="{Binding CoreHeartbeatSecondsError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Auto Clear Modules (0/1)" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding CoreAutoClearModules, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding CoreAutoClearModulesError}" Visibility="{Binding CoreAutoClearModulesError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Sound Enabled (0/1)" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding CoreSoundEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding CoreSoundEnabledError}" Visibility="{Binding CoreSoundEnabledError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Exit Menu Visible (0/1)" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding CoreExitMenuVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding CoreExitMenuVisibleError}" Visibility="{Binding CoreExitMenuVisibleError, Converter={StaticResource StringToVisibilityConverter}}" />
+
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Start/Stop Menu Visible (0/1)" />
+                                <TextBox Style="{StaticResource InputTextBoxStyle}" Text="{Binding CoreStartStopMenuVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource ErrorTextStyle}" Text="{Binding CoreStartStopMenuVisibleError}" Visibility="{Binding CoreStartStopMenuVisibleError, Converter={StaticResource StringToVisibilityConverter}}" />
+                            </StackPanel>
+                        </StackPanel>
+                        </Grid>
+
+                        <WrapPanel Margin="0,14,0,2" ItemHeight="38">
+                            <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="Export_Click">Export</Button>
+                            <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="Deploy_Click">Deploy</Button>
+                            <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="ExportIntune_Click">Export Intune Package</Button>
+                            <Button Margin="0,0,8,8" Style="{StaticResource SecondaryButtonStyle}" Click="OpenOutputFolder_Click">Open Output Folder</Button>
+                        </WrapPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

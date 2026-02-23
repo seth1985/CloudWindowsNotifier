@@ -15,6 +15,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E3B83B91
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsNotifierCloud.Tests", "tests\WindowsNotifierCloud.Tests\WindowsNotifierCloud.Tests.csproj", "{EB3AF662-60DC-4CA7-AEC6-F15B0C5E9DBD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsNotifier.OfflineAuthoring.App", "src\WindowsNotifier.OfflineAuthoring.App\WindowsNotifier.OfflineAuthoring.App.csproj", "{D1D3674D-ED8E-4969-B850-FCF8B523D9EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsNotifier.OfflineAuthoring.Core", "src\WindowsNotifier.OfflineAuthoring.Core\WindowsNotifier.OfflineAuthoring.Core.csproj", "{B2C5DD91-FCE4-4EDB-9550-1D80F20BA11C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsNotifier.OfflineAuthoring.Infrastructure", "src\WindowsNotifier.OfflineAuthoring.Infrastructure\WindowsNotifier.OfflineAuthoring.Infrastructure.csproj", "{7C6FA800-0557-4524-AB0D-2735BCEE6BD7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsNotifier.OfflineAuthoring.Tests", "tests\WindowsNotifier.OfflineAuthoring.Tests\WindowsNotifier.OfflineAuthoring.Tests.csproj", "{03156CA5-9145-4B8C-8827-8B0699431307}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,11 +48,31 @@ Global
 		{EB3AF662-60DC-4CA7-AEC6-F15B0C5E9DBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EB3AF662-60DC-4CA7-AEC6-F15B0C5E9DBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EB3AF662-60DC-4CA7-AEC6-F15B0C5E9DBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1D3674D-ED8E-4969-B850-FCF8B523D9EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1D3674D-ED8E-4969-B850-FCF8B523D9EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1D3674D-ED8E-4969-B850-FCF8B523D9EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1D3674D-ED8E-4969-B850-FCF8B523D9EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2C5DD91-FCE4-4EDB-9550-1D80F20BA11C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C5DD91-FCE4-4EDB-9550-1D80F20BA11C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C5DD91-FCE4-4EDB-9550-1D80F20BA11C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C5DD91-FCE4-4EDB-9550-1D80F20BA11C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C6FA800-0557-4524-AB0D-2735BCEE6BD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C6FA800-0557-4524-AB0D-2735BCEE6BD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C6FA800-0557-4524-AB0D-2735BCEE6BD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C6FA800-0557-4524-AB0D-2735BCEE6BD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03156CA5-9145-4B8C-8827-8B0699431307}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03156CA5-9145-4B8C-8827-8B0699431307}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03156CA5-9145-4B8C-8827-8B0699431307}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03156CA5-9145-4B8C-8827-8B0699431307}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{65C6506C-F9BE-4912-9B75-CB1CA4AAC62E} = {BA8F1F2F-4DC2-4CB2-B687-B23F71C34F34}
 		{D0EFB368-FB4E-40A5-8D01-5A471357602B} = {BA8F1F2F-4DC2-4CB2-B687-B23F71C34F34}
 		{D2C9E1F5-DF34-4B48-8BBE-6ED770E15F94} = {BA8F1F2F-4DC2-4CB2-B687-B23F71C34F34}
 		{EB3AF662-60DC-4CA7-AEC6-F15B0C5E9DBD} = {E3B83B91-5156-446E-85FB-B1FF5AA2C77F}
+		{D1D3674D-ED8E-4969-B850-FCF8B523D9EE} = {BA8F1F2F-4DC2-4CB2-B687-B23F71C34F34}
+		{B2C5DD91-FCE4-4EDB-9550-1D80F20BA11C} = {BA8F1F2F-4DC2-4CB2-B687-B23F71C34F34}
+		{7C6FA800-0557-4524-AB0D-2735BCEE6BD7} = {BA8F1F2F-4DC2-4CB2-B687-B23F71C34F34}
+		{03156CA5-9145-4B8C-8827-8B0699431307} = {E3B83B91-5156-446E-85FB-B1FF5AA2C77F}
 	EndGlobalSection
 EndGlobal

@@ -76,6 +76,54 @@ dotnet build core/WindowsNotifierTray/WindowsNotifierTray.csproj -c Release
 core\WindowsNotifierTray\bin\Release\net6.0-windows10.0.19041.0\WindowsNotifierTray.exe
 ```
 
+### 4. Build and Run Offline Authoring Tool
+
+```powershell
+dotnet run --project src/WindowsNotifier.OfflineAuthoring.App
+```
+
+Offline authoring output roots:
+
+- Projects: `%USERPROFILE%\Documents\Windows Notifier\OfflineProjects`
+- Exports: `%USERPROFILE%\Documents\Windows Notifier\OfflineExports`
+- Intune packages: `%USERPROFILE%\Documents\Windows Notifier\IntunePackages`
+
+Intune packaging dependencies:
+
+- `deployment_tools\IntuneWinAppUtil.exe`
+- `deployment_tools\install_module_intune.ps1`
+
+Intune cloud publish status:
+
+- `.intunewin` packaging is implemented.
+- Graph-based publish/assignment to Intune groups is implemented in API/frontend but currently **TODO for activation** in this environment.
+- Activation prerequisite: create an Azure app registration with Graph application permissions (`Group.Read.All`, `DeviceManagementApps.ReadWrite.All`) and set `IntuneDeployment:*` config values.
+
+### 5. Publish Offline Authoring Tool (Distributable)
+
+Use the packaging script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\publish_offline_authoring.ps1
+```
+
+Optional self-contained publish:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\publish_offline_authoring.ps1 -SelfContained
+```
+
+Output artifacts:
+
+- Publish folder: `artifacts\offline-authoring\publish-<Configuration>-<Runtime>`
+- Zip package: `artifacts\offline-authoring\WindowsNotifier.OfflineAuthoring.<Configuration>.<Runtime>.zip`
+
+Install published app locally and create desktop shortcut:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install_offline_authoring.ps1
+```
+
 ## Configuration (DevelopmentLocal)
 
 Defaults from `src/WindowsNotifierCloud.Api/appsettings.Development.json`:
@@ -86,6 +134,7 @@ Defaults from `src/WindowsNotifierCloud.Api/appsettings.Development.json`:
 - `Storage:DevCoreModulesRoot`: `%LOCALAPPDATA%\\Windows Notifier\\Modules`
 - `ConnectionStrings:Default`: `Host=localhost;Port=5432;Database=windows_notifier_cloud_dev;Username=postgres;Password=postgres`
 - `Telemetry:ApiKey`: `dev-telemetry-key-change-me`
+- `IntuneDeployment:Enabled`: `false` (set `true` only after Azure app registration is ready)
 
 Default seeded portal user (if none exists):
 
@@ -122,6 +171,13 @@ Tray/Core:
 - Template gallery CRUD
 - Telemetry ingest and reporting summaries
 - Role-based API authorization
+- Offline authoring desktop app with local project save/load, import module folder, deploy to local modules root, and Intune package export
+- Intune group-targeted publish workflow in frontend/API (feature remains disabled until Azure app registration and Graph permissions are configured)
+- Unsaved-changes guard in offline app for new/open/load/import/close with save-discard-cancel prompt
+- Local recovery snapshots with startup restore prompt, periodic autosave (2 minutes), and stale snapshot cleanup
+- Inline field-level validation messages in offline editor (in addition to summary panel)
+- Script file workflow in offline editor: load `.ps1` directly into Conditional/Dynamic editor and edit inline
+- Keyboard shortcuts in offline editor: `Ctrl+S` save, `Ctrl+Shift+S` save as, `F5` validate
 
 ## API Surface (Current)
 
@@ -150,6 +206,8 @@ Manifest and export:
 - `POST /api/export/{id}`
 - `POST /api/export/{id}/devcore`
 - `POST /api/export/{id}/package`
+- `GET /api/intune/groups` (AdvancedOnly, filtered by configured prefix, default `WN-`)
+- `POST /api/intune/deploy/{id}` (AdvancedOnly, publish/assign to selected group)
 
 Campaigns, templates, users:
 
@@ -214,3 +272,4 @@ npm run build
 - `ModuleHeroController` uses `System.Drawing`, which raises cross-platform analyzer warnings in API builds.
 - SQLite support has been removed; this repo is now PostgreSQL-only.
 - Test coverage is currently minimal.
+- Intune Graph deployment endpoints are present but should stay disabled until Azure app registration + Graph app permissions are provisioned.

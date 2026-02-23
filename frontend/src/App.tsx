@@ -79,7 +79,11 @@ export default function App() {
     exportDevCoreSelected,
     exportModule,
     removeSelected,
-    removeModule
+    removeModule,
+    loadIntuneGroups,
+    deploySelectedToIntuneGroup,
+    intuneGroups,
+    loadingIntuneGroups
   } = useModules(apiBase, token, setStatus, isAdvanced);
 
   const {
@@ -223,6 +227,10 @@ export default function App() {
                 onExportRow={exportModule}
                 onRemoveRow={removeModule}
                 onRemoveSelected={removeSelected}
+                onLoadIntuneGroups={loadIntuneGroups}
+                onDeploySelectedToIntune={deploySelectedToIntuneGroup}
+                intuneGroups={intuneGroups}
+                loadingIntuneGroups={loadingIntuneGroups}
                 isAdvanced={isAdvanced}
                 isAdmin={isAdmin}
               />

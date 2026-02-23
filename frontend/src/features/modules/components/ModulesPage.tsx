@@ -3,6 +3,7 @@ import { Search, Filter, MoreHorizontal, Download, Trash2, CheckSquare, Square, 
 import type { ModuleRow, NotificationType } from '../../../types';
 import { ModuleForm } from './ModuleForm';
 import { cn } from '../../../lib/utils';
+import type { IntuneGroup } from '../api';
 
 type FormState = React.ComponentProps<typeof ModuleForm>['formState'];
 
@@ -34,6 +35,10 @@ type Props = {
   onRemoveSelected: () => void;
   onExportRow: (id: string) => void;
   onRemoveRow: (id: string) => void;
+  onLoadIntuneGroups: () => void;
+  onDeploySelectedToIntune: (groupId: string) => void;
+  intuneGroups: IntuneGroup[];
+  loadingIntuneGroups: boolean;
   isAdvanced?: boolean;
   isAdmin?: boolean;
 };
@@ -66,12 +71,18 @@ export const ModulesPage: React.FC<Props> = (props) => {
     onRemoveSelected,
     onExportRow,
     onRemoveRow,
+    onLoadIntuneGroups,
+    onDeploySelectedToIntune,
+    intuneGroups,
+    loadingIntuneGroups,
     isAdvanced = false,
     isAdmin = false
   } = props;
 
   // Simple Pagination State
   const [currentPage, setCurrentPage] = useState(1);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
   const itemsPerPage = 8;
   const totalPages = Math.ceil(filteredModules.length / itemsPerPage);
   const paginatedModules = filteredModules.slice(
@@ -181,10 +192,19 @@ export const ModulesPage: React.FC<Props> = (props) => {
               </div>
             )}
             <button
-              className="h-11 px-6 text-xs font-black uppercase tracking-widest text-text-tertiary border border-dashed border-border rounded-xl cursor-not-allowed hidden md:flex items-center gap-2 opacity-50"
-              disabled
+              className={cn(
+                "h-11 px-6 text-xs font-black uppercase tracking-widest border rounded-xl hidden md:flex items-center gap-2 transition-all",
+                selectedIds.size === 1
+                  ? "text-primary-main border-primary-main/40 bg-primary-main/5 hover:bg-primary-main/10"
+                  : "text-text-tertiary border border-dashed border-border cursor-not-allowed opacity-50"
+              )}
+              disabled={selectedIds.size !== 1}
+              onClick={async () => {
+                await onLoadIntuneGroups();
+                setShowPublishDialog(true);
+              }}
             >
-              Publish (Soon)
+              Publish
             </button>
           </div>
         </div>
@@ -326,6 +346,52 @@ export const ModulesPage: React.FC<Props> = (props) => {
           </div>
         </div>
       </div>
+
+      {showPublishDialog && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg card border-border shadow-xl p-6 space-y-4">
+            <div className="text-lg font-black text-text-primary">Deploy to Intune Group</div>
+            <p className="text-sm text-text-secondary">
+              Select one existing Intune group (filtered server-side to names starting with <code>WN-</code>).
+            </p>
+            <select
+              className="input h-11 w-full"
+              value={selectedGroupId}
+              onChange={(e) => setSelectedGroupId(e.target.value)}
+              disabled={loadingIntuneGroups}
+            >
+              <option value="">Select group...</option>
+              {intuneGroups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.displayName}
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowPublishDialog(false);
+                  setSelectedGroupId('');
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn"
+                disabled={!selectedGroupId}
+                onClick={() => {
+                  onDeploySelectedToIntune(selectedGroupId);
+                  setShowPublishDialog(false);
+                  setSelectedGroupId('');
+                }}
+              >
+                Deploy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
